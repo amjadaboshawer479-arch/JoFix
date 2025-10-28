@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "503644935295",
+    "project_id": "g-p-jofix",
+    "storage_bucket": "g-p-jofix.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:503644935295:android:e1414c490b5cd855fd9b4a",
+        "android_client_info": {
+          "package_name": "com.example.amjad"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCh0F2FtcQSOGod0Bh6XwT_Z6LKgUrOSME"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,11 +1,11 @@
 import 'package:amjad/screen/login_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 //----------اlogin service provider----------//
-
 class ServiseProviderLogin extends StatefulWidget {
   const ServiseProviderLogin({super.key});
-
   @override
   State<ServiseProviderLogin> createState() => _ServiseProviderLoginState();
 }
@@ -14,12 +14,10 @@ class _ServiseProviderLoginState extends State<ServiseProviderLogin> {
   final phoneController = TextEditingController();
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
-
   bool isPhoneValid = false;
   bool isEmailValid = false;
   bool isPasswordValid = false;
   bool isPasswordVisible = false;
-
   // --- Validators ---
   String? _validatePhone(String value) {
     if (value.isEmpty) return "Phone number is required";
@@ -37,12 +35,10 @@ class _ServiseProviderLoginState extends State<ServiseProviderLogin> {
 
   String? _validatePassword(String value) {
     if (value.isEmpty) return "Password is required";
-
     final hasUpper = value.contains(RegExp(r'[A-Z]'));
     final hasLower = value.contains(RegExp(r'[a-z]'));
     final hasDigit = value.contains(RegExp(r'[0-9]'));
     final hasSpecial = value.contains(RegExp(r'[!@#\$%^&*(),.?":{}|<>]'));
-
     if (value.length < 8) return "At least 8 characters";
     if (!hasUpper) return "Must contain an uppercase letter";
     if (!hasLower) return "Must contain a lowercase letter";
@@ -79,9 +75,7 @@ class _ServiseProviderLoginState extends State<ServiseProviderLogin> {
   Widget build(BuildContext context) {
     const Color borderColor = Color(0xFFB68645);
     const Color buttonColor = Color(0xFFB68645);
-
     bool allValid = isPhoneValid && isEmailValid && isPasswordValid;
-
     InputDecoration customInput(String hint) {
       return InputDecoration(
         hintText: hint,
@@ -117,7 +111,6 @@ class _ServiseProviderLoginState extends State<ServiseProviderLogin> {
               ),
             ),
             const SizedBox(height: 16),
-
             // ===== Phone =====
             TextField(
               controller: phoneController,
@@ -125,7 +118,6 @@ class _ServiseProviderLoginState extends State<ServiseProviderLogin> {
               decoration: customInput("Phone e.g. +9627XXXXXXXX"),
             ),
             const SizedBox(height: 16),
-
             // ===== Email =====
             TextField(
               controller: emailController,
@@ -133,7 +125,6 @@ class _ServiseProviderLoginState extends State<ServiseProviderLogin> {
               decoration: customInput("Email"),
             ),
             const SizedBox(height: 16),
-
             // ===== Password =====
             TextField(
               controller: passwordController,
@@ -163,7 +154,6 @@ class _ServiseProviderLoginState extends State<ServiseProviderLogin> {
               style: TextStyle(color: borderColor, fontSize: 12),
             ),
             const SizedBox(height: 32),
-
             // ===== Continue Button =====
             SizedBox(
               width: double.infinity,
@@ -171,22 +161,59 @@ class _ServiseProviderLoginState extends State<ServiseProviderLogin> {
               child: Builder(
                 builder: (context) {
                   return ElevatedButton(
-                    onPressed: allValid
-                        ? () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    const ServiceProviderHome(),
-                              ),
-                            );
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text("All fields are valid ✅"),
-                              ),
-                            );
-                          }
-                        : null,
+                    onPressed: () async {
+                      showDialog(
+                        context: context,
+                        barrierDismissible: false,
+                        builder: (_) =>
+                            const Center(child: CircularProgressIndicator()),
+                      );
+
+                      try {
+                        final auth = FirebaseAuth.instance;
+                        final cred = await auth.signInWithEmailAndPassword(
+                          email: emailController.text.trim(),
+                          password: passwordController.text,
+                        );
+
+                        final uid = cred.user?.uid;
+                        if (uid == null) throw Exception("User ID not found");
+
+                        final firestore = FirebaseFirestore.instance;
+                        final doc = await firestore
+                            .collection('service_providers')
+                            .doc(uid)
+                            .get();
+
+                        Navigator.pop(context); // close loading
+
+                        if (!doc.exists) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text("Profile not found.")),
+                          );
+                          return;
+                        }
+
+                        final data = doc.data()!;
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => ServiceProviderHome(
+                              firstName: data['firstName'] ?? '',
+                              lastName: data['lastName'] ?? '',
+                              email: data['email'] ?? '',
+                              phone: data['phone'] ?? '',
+                            ),
+                          ),
+                        );
+                      } on FirebaseAuthException catch (e) {
+                        Navigator.pop(context);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text(e.message ?? "Login failed")),
+                        );
+                      }
+                    },
+
                     style: ElevatedButton.styleFrom(
                       backgroundColor: allValid ? buttonColor : Colors.grey,
                       shape: RoundedRectangleBorder(
@@ -205,9 +232,7 @@ class _ServiseProviderLoginState extends State<ServiseProviderLogin> {
                 },
               ),
             ),
-
             const SizedBox(height: 16),
-
             // ===== Small Sign Up Button =====
             Center(
               child: TextButton(
@@ -218,7 +243,6 @@ class _ServiseProviderLoginState extends State<ServiseProviderLogin> {
                       builder: (context) => const SignupScreen(),
                     ),
                   );
-
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text("Sign Up clicked")),
                   );
@@ -241,10 +265,8 @@ class _ServiseProviderLoginState extends State<ServiseProviderLogin> {
 }
 
 //----------signe up secreen---------//
-
 class SignupScreen extends StatefulWidget {
   const SignupScreen({Key? key}) : super(key: key);
-
   @override
   State<SignupScreen> createState() => _SignupScreenState();
 }
@@ -255,20 +277,16 @@ class _SignupScreenState extends State<SignupScreen> {
   final TextEditingController phoneController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passController = TextEditingController();
-
   // رسائل الخطأ
   String? firstNameError;
   String? lastNameError;
   String? phoneError;
   String? emailError;
   String? passError;
-
   bool _obscurePassword = true;
-
   // ===== شروط التحقق =====
   bool get isFirstValid => firstNameController.text.trim().isNotEmpty;
   bool get isLastValid => lastNameController.text.trim().isNotEmpty;
-
   bool get isPhoneValid {
     final phone = phoneController.text.trim();
     return phone.isNotEmpty && phone.startsWith("+962") && phone.length > 4;
@@ -331,7 +349,6 @@ class _SignupScreenState extends State<SignupScreen> {
         isPhoneValid &&
         isEmailValid &&
         isPassValid;
-
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -353,7 +370,6 @@ class _SignupScreenState extends State<SignupScreen> {
               style: TextStyle(fontSize: 16, color: Color(0xFFB68645)),
             ),
             const SizedBox(height: 24),
-
             // First Name
             TextField(
               controller: firstNameController,
@@ -365,7 +381,6 @@ class _SignupScreenState extends State<SignupScreen> {
               onChanged: (_) => validateFirst(),
             ),
             const SizedBox(height: 16),
-
             // Last Name
             TextField(
               controller: lastNameController,
@@ -377,7 +392,6 @@ class _SignupScreenState extends State<SignupScreen> {
               onChanged: (_) => validateLast(),
             ),
             const SizedBox(height: 16),
-
             // Phone Number
             TextField(
               controller: phoneController,
@@ -390,7 +404,6 @@ class _SignupScreenState extends State<SignupScreen> {
               onChanged: (_) => validatePhone(),
             ),
             const SizedBox(height: 12),
-
             // ملاحظة تظهر فقط إذا الرقم مش صحيح
             if (!isPhoneValid && phoneController.text.isNotEmpty)
               const Text(
@@ -398,7 +411,6 @@ class _SignupScreenState extends State<SignupScreen> {
                 style: TextStyle(fontSize: 13, color: Color(0xFFB68645)),
               ),
             const SizedBox(height: 16),
-
             // Email
             TextField(
               controller: emailController,
@@ -411,7 +423,6 @@ class _SignupScreenState extends State<SignupScreen> {
               onChanged: (_) => validateEmail(),
             ),
             const SizedBox(height: 16),
-
             // Password
             TextField(
               controller: passController,
@@ -433,7 +444,6 @@ class _SignupScreenState extends State<SignupScreen> {
               ),
               onChanged: (_) => validatePass(),
             ),
-
             const SizedBox(height: 12),
             const Text(
               "Password must contain:\n"
@@ -444,9 +454,7 @@ class _SignupScreenState extends State<SignupScreen> {
               "• One special character (!@#\$&*~)",
               style: TextStyle(fontSize: 13, color: Color(0xFFB68645)),
             ),
-
             const SizedBox(height: 32),
-
             // Next Button
             SizedBox(
               width: double.infinity,
@@ -458,19 +466,58 @@ class _SignupScreenState extends State<SignupScreen> {
                     borderRadius: BorderRadius.circular(8),
                   ),
                 ),
-                onPressed: allValid
-                    ? () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => ServiceProviderHome(
-                              firstName: firstNameController.text.trim(),
-                              lastName: lastNameController.text.trim(),
-                            ),
-                          ),
-                        );
-                      }
-                    : null,
+                onPressed: () async {
+                  showDialog(
+                    context: context,
+                    barrierDismissible: false,
+                    builder: (_) =>
+                        const Center(child: CircularProgressIndicator()),
+                  );
+
+                  try {
+                    final auth = FirebaseAuth.instance;
+                    final cred = await auth.createUserWithEmailAndPassword(
+                      email: emailController.text.trim(),
+                      password: passController.text,
+                    );
+
+                    final uid = cred.user?.uid;
+                    if (uid == null) throw Exception("User ID not found");
+
+                    final firestore = FirebaseFirestore.instance;
+                    await firestore
+                        .collection('service_providers')
+                        .doc(uid)
+                        .set({
+                          'firstName': firstNameController.text.trim(),
+                          'lastName': lastNameController.text.trim(),
+                          'phone': phoneController.text.trim(),
+                          'email': emailController.text.trim(),
+                          'createdAt': FieldValue.serverTimestamp(),
+                        });
+
+                    Navigator.pop(context); // close loading
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text("Account created!")),
+                    );
+
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ServiceProviderHome(
+                          firstName: firstNameController.text.trim(),
+                          lastName: lastNameController.text.trim(),
+                        ),
+                      ),
+                    );
+                  } on FirebaseAuthException catch (e) {
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text(e.message ?? "Error")),
+                    );
+                  }
+                },
+
                 child: const Text(
                   "Sign Up",
                   style: TextStyle(fontSize: 16, color: Colors.white),
@@ -488,13 +535,15 @@ class _SignupScreenState extends State<SignupScreen> {
 class ServiceProviderHome extends StatefulWidget {
   final String firstName;
   final String lastName;
-
+  final String email;
+  final String phone;
   const ServiceProviderHome({
     Key? key,
     this.firstName = " ",
     this.lastName = " ",
+    this.email = '',
+    this.phone = '',
   }) : super(key: key);
-
   @override
   State<ServiceProviderHome> createState() => _ServiceProviderHomeState();
 }
@@ -503,7 +552,6 @@ class _ServiceProviderHomeState extends State<ServiceProviderHome> {
   int _selectedIndex = 0;
   bool isLoading = true;
   List<String> myServices = [];
-
   @override
   void initState() {
     super.initState();
@@ -569,7 +617,6 @@ class _ServiceProviderHomeState extends State<ServiceProviderHome> {
   @override
   Widget build(BuildContext context) {
     final Color activeColor = const Color(0xFFB68645);
-
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Color(0xFFB68645),
@@ -587,7 +634,6 @@ class _ServiceProviderHomeState extends State<ServiceProviderHome> {
           ),
         ],
       ),
-
       drawer: Drawer(
         child: Column(
           children: [
@@ -629,8 +675,8 @@ class _ServiceProviderHomeState extends State<ServiceProviderHome> {
                     },
                   ),
                   ListTile(
-                    leading: const Icon(Icons.phone),
-                    title: const Text("Contact Client"),
+                    leading: const Icon(Icons.message),
+                    title: const Text("inpox"),
                     onTap: () {
                       Navigator.push(
                         context,
@@ -669,7 +715,6 @@ class _ServiceProviderHomeState extends State<ServiceProviderHome> {
           ],
         ),
       ),
-
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -700,7 +745,6 @@ class _ServiceProviderHomeState extends State<ServiceProviderHome> {
           ),
         ],
       ),
-
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         onTap: _onBottomTap,
@@ -718,15 +762,14 @@ class _ServiceProviderHomeState extends State<ServiceProviderHome> {
     );
   }
 }
-//------------manage service -------//
 
+//------------manage service -------//
 class Service {
   String name;
   String description;
   double price;
   String duration;
   bool isAvailable;
-
   Service({
     required this.name,
     required this.description,
@@ -738,14 +781,12 @@ class Service {
 
 class ManageServicesPage extends StatefulWidget {
   const ManageServicesPage({Key? key}) : super(key: key);
-
   @override
   State<ManageServicesPage> createState() => _ManageServicesPageState();
 }
 
 class _ManageServicesPageState extends State<ManageServicesPage> {
   final Color brown = const Color(0xFFB68645);
-
   // قائمة الخدمات
   List<Service> services = [
     Service(
@@ -756,7 +797,6 @@ class _ManageServicesPageState extends State<ManageServicesPage> {
       isAvailable: true,
     ),
   ];
-
   // ============== إضافة خدمة جديدة ==============
   void _addService() {
     _showServiceDialog();
@@ -807,7 +847,6 @@ class _ManageServicesPageState extends State<ManageServicesPage> {
             duration: "",
             isAvailable: true,
           );
-
     final nameCtrl = TextEditingController(text: service.name);
     final descCtrl = TextEditingController(text: service.description);
     final priceCtrl = TextEditingController(
@@ -815,7 +854,6 @@ class _ManageServicesPageState extends State<ManageServicesPage> {
     );
     final durationCtrl = TextEditingController(text: service.duration);
     bool availability = service.isAvailable;
-
     showDialog(
       context: context,
       builder: (_) => StatefulBuilder(
@@ -992,11 +1030,10 @@ class _ManageServicesPageState extends State<ManageServicesPage> {
     );
   }
 }
-//--------create &manage post--------//
 
+//--------create &manage post--------//
 class ManagePostsPage extends StatefulWidget {
   const ManagePostsPage({super.key});
-
   @override
   State<ManagePostsPage> createState() => _ManagePostsPageState();
 }
@@ -1004,7 +1041,6 @@ class ManagePostsPage extends StatefulWidget {
 class _ManagePostsPageState extends State<ManagePostsPage> {
   List<Map<String, dynamic>> posts = [];
   List<Map<String, dynamic>> archivedPosts = [];
-
   // controllers
   final TextEditingController titleController = TextEditingController();
   final TextEditingController descriptionController = TextEditingController();
@@ -1012,9 +1048,7 @@ class _ManagePostsPageState extends State<ManagePostsPage> {
   String? selectedService;
   bool isActive = true;
   int? editingIndex;
-
   final List<String> myServices = ["Cleaning", "Painting"]; // مثال
-
   void _savePost() {
     if (titleController.text.isEmpty ||
         descriptionController.text.isEmpty ||
@@ -1024,7 +1058,6 @@ class _ManagePostsPageState extends State<ManagePostsPage> {
       );
       return;
     }
-
     final post = {
       'title': titleController.text,
       'description': descriptionController.text,
@@ -1033,7 +1066,6 @@ class _ManagePostsPageState extends State<ManagePostsPage> {
       'active': isActive,
       'date': DateTime.now().toString(),
     };
-
     setState(() {
       if (editingIndex != null) {
         posts[editingIndex!] = post;
@@ -1042,7 +1074,6 @@ class _ManagePostsPageState extends State<ManagePostsPage> {
         posts.add(post);
       }
     });
-
     _clearForm();
   }
 
@@ -1136,7 +1167,6 @@ class _ManagePostsPageState extends State<ManagePostsPage> {
   @override
   Widget build(BuildContext context) {
     const Color primaryColor = Color(0xFFB68645);
-
     return Scaffold(
       appBar: AppBar(
         backgroundColor: primaryColor,
@@ -1280,34 +1310,6 @@ class ContactClientPage extends StatefulWidget {
 }
 
 class _ContactClientPageState extends State<ContactClientPage> {
-  List<String> clients = ["Client A", "Client B", "Client C"]; // مثال
-  Map<String, List<String>> messages = {}; // لكل عميل قائمة رسائل
-
-  @override
-  void initState() {
-    super.initState();
-    for (var client in clients) {
-      messages[client] = [];
-    }
-  }
-
-  void _openChat(String clientName) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => ChatScreen(
-          clientName: clientName,
-          messages: messages[clientName]!,
-          onSend: (msg) {
-            setState(() {
-              messages[clientName]!.add("You: $msg");
-            });
-          },
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     const Color primaryColor = Color(0xFFB68645);
@@ -1321,50 +1323,137 @@ class _ContactClientPageState extends State<ContactClientPage> {
         backgroundColor: primaryColor,
         centerTitle: true,
       ),
-      body: ListView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: clients.length,
-        itemBuilder: (context, index) {
-          final client = clients[index];
-          return Card(
-            child: ListTile(
-              title: Text(client),
-              subtitle: Text(
-                messages[client]!.isNotEmpty
-                    ? messages[client]!.last
-                    : "No messages yet",
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              trailing: const Icon(Icons.chat, color: Color(0xFFB68645)),
-              onTap: () => _openChat(client),
-            ),
+      body: StreamBuilder<QuerySnapshot>(
+        stream: FirebaseFirestore.instance.collection('clients').snapshots(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+            return const Center(child: Text("No clients found."));
+          }
+
+          final clients = snapshot.data!.docs;
+
+          return ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: clients.length,
+            itemBuilder: (context, index) {
+              final data = clients[index].data() as Map<String, dynamic>;
+              final clientId = clients[index].id;
+              final firstName = data['firstName'] ?? '';
+              final lastName = data['lastName'] ?? '';
+              final fullName = '$firstName $lastName';
+
+              return Card(
+                child: ListTile(
+                  title: Text(fullName),
+                  subtitle: Text(data['email'] ?? ''),
+                  trailing: const Icon(Icons.chat, color: primaryColor),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ProviderChatScreen(
+                          clientId: clientId,
+                          clientName: fullName,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              );
+            },
           );
         },
       ),
     );
   }
 }
-//----------chat screen inside contact client-------//
 
-class ChatScreen extends StatefulWidget {
+// ---------- Chat Screen ---------- //
+class ProviderChatScreen extends StatefulWidget {
+  final String clientId;
   final String clientName;
-  final List<String> messages;
-  final Function(String) onSend;
 
-  const ChatScreen({
+  const ProviderChatScreen({
     super.key,
+    required this.clientId,
     required this.clientName,
-    required this.messages,
-    required this.onSend,
   });
 
   @override
-  State<ChatScreen> createState() => _ChatScreenState();
+  State<ProviderChatScreen> createState() => _ProviderChatScreenState();
 }
 
-class _ChatScreenState extends State<ChatScreen> {
+class _ProviderChatScreenState extends State<ProviderChatScreen> {
   final TextEditingController msgController = TextEditingController();
+  late String providerId;
+  late String chatId;
+
+  @override
+  void initState() {
+    super.initState();
+    providerId = FirebaseAuth.instance.currentUser!.uid;
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      print("⚠️ Provider not logged in!");
+      return;
+    }
+    providerId = user.uid;
+    // chatId ثابت لكل محادثة بين نفس الكلينت والبروفايدر
+    chatId = providerId.compareTo(widget.clientId) < 0
+        ? "${providerId}_${widget.clientId}"
+        : "${widget.clientId}_${providerId}";
+
+    // ✅ عند فتح الشات، نعمل تحديث للرسائل غير المقروءة
+    _markMessagesAsRead();
+  }
+
+  Future<void> _markMessagesAsRead() async {
+    final messagesRef = FirebaseFirestore.instance
+        .collection('chats')
+        .doc(chatId)
+        .collection('messages');
+
+    final unreadMessages = await messagesRef
+        .where('receiverId', isEqualTo: providerId)
+        .where('isRead', isEqualTo: false)
+        .get();
+
+    for (var doc in unreadMessages.docs) {
+      doc.reference.update({'isRead': true});
+    }
+  }
+
+  Future<void> _sendMessage() async {
+    final text = msgController.text.trim();
+    if (text.isEmpty) return;
+
+    final msgData = {
+      'senderId': providerId,
+      'receiverId': widget.clientId,
+      'message': text,
+      'timestamp': FieldValue.serverTimestamp(),
+      'isRead': false,
+    };
+
+    // مرجع الدردشة
+    final chatRef = FirebaseFirestore.instance.collection('chats').doc(chatId);
+
+    // إنشاء أو تحديث الدردشة الأساسية
+    await chatRef.set({
+      'participants': [providerId, widget.clientId],
+      'lastMessage': text,
+      'lastMessageTime': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+
+    // إضافة الرسالة للمحادثة
+    await chatRef.collection('messages').add(msgData);
+
+    msgController.clear();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1372,46 +1461,104 @@ class _ChatScreenState extends State<ChatScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.clientName, style: TextStyle(color: Colors.white)),
+        title: Text(
+          widget.clientName,
+          style: const TextStyle(color: Colors.white),
+        ),
         backgroundColor: primaryColor,
       ),
       body: Column(
         children: [
+          // ✅ عرض الرسائل
           Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: widget.messages.length,
-              itemBuilder: (context, index) {
-                final msg = widget.messages[index];
-                return Align(
-                  alignment: msg.startsWith("You:")
-                      ? Alignment.centerRight
-                      : Alignment.centerLeft,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 8,
-                      horizontal: 12,
-                    ),
-                    margin: const EdgeInsets.symmetric(vertical: 4),
-                    decoration: BoxDecoration(
-                      color: msg.startsWith("You:")
-                          ? primaryColor.withOpacity(0.8)
-                          : Colors.grey[300],
-                      borderRadius: BorderRadius.circular(12),
-                    ),
+            child: StreamBuilder<QuerySnapshot>(
+              stream: FirebaseFirestore.instance
+                  .collection('chats')
+                  .doc(chatId)
+                  .collection('messages')
+                  .orderBy('timestamp', descending: false)
+                  .snapshots(),
+              builder: (context, snapshot) {
+                // ✅ فحص الأخطاء أولاً
+                if (snapshot.hasError) {
+                  return Center(
                     child: Text(
-                      msg.replaceFirst("You:", ""),
-                      style: TextStyle(
-                        color: msg.startsWith("You:")
-                            ? Colors.white
-                            : Colors.black,
-                      ),
+                      'Error: ${snapshot.error}',
+                      style: const TextStyle(color: Colors.red),
                     ),
-                  ),
+                  );
+                }
+                // ✅ فحص حالة التحميل
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                // ✅ فحص إذا ما في رسائل بعد
+                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                  return const Center(child: Text('No messages yet.'));
+                }
+
+                final messages = snapshot.data!.docs;
+
+                return ListView.builder(
+                  padding: const EdgeInsets.all(12),
+                  itemCount: messages.length,
+                  itemBuilder: (context, index) {
+                    final msg = messages[index].data() as Map<String, dynamic>;
+                    final isProvider = msg['senderId'] == providerId;
+                    final time = msg['timestamp'] != null
+                        ? (msg['timestamp'] as Timestamp)
+                              .toDate()
+                              .toLocal()
+                              .toString()
+                              .substring(11, 16)
+                        : '';
+
+                    return Align(
+                      alignment: isProvider
+                          ? Alignment.centerRight
+                          : Alignment.centerLeft,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 8,
+                          horizontal: 12,
+                        ),
+                        margin: const EdgeInsets.symmetric(vertical: 4),
+                        decoration: BoxDecoration(
+                          color: isProvider
+                              ? primaryColor.withOpacity(0.8)
+                              : Colors.grey[300],
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              msg['message'] ?? '',
+                              style: TextStyle(
+                                color: isProvider ? Colors.white : Colors.black,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              time,
+                              style: TextStyle(
+                                color: isProvider
+                                    ? Colors.white70
+                                    : Colors.black54,
+                                fontSize: 10,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
                 );
               },
             ),
           ),
+
+          // ✅ مربع إرسال الرسائل
           Padding(
             padding: const EdgeInsets.all(12),
             child: Row(
@@ -1427,17 +1574,10 @@ class _ChatScreenState extends State<ChatScreen> {
                 ),
                 const SizedBox(width: 8),
                 FloatingActionButton(
-                  backgroundColor: primaryColor,
                   mini: true,
+                  backgroundColor: primaryColor,
                   child: const Icon(Icons.send, color: Colors.white),
-                  onPressed: () {
-                    if (msgController.text.trim().isEmpty) return;
-                    widget.onSend(msgController.text.trim());
-                    setState(() {
-                      widget.messages.add("You: ${msgController.text.trim()}");
-                    });
-                    msgController.clear();
-                  },
+                  onPressed: _sendMessage,
                 ),
               ],
             ),
@@ -1449,17 +1589,14 @@ class _ChatScreenState extends State<ChatScreen> {
 }
 
 //----------order navigation bar-----//
-
 class OrdersScreen extends StatefulWidget {
   const OrdersScreen({super.key});
-
   @override
   State<OrdersScreen> createState() => _OrdersScreenState();
 }
 
 class _OrdersScreenState extends State<OrdersScreen> {
   final Color brown = const Color(0xFFB68645);
-
   List<Map<String, dynamic>> orders = [
     {
       "id": 1,
@@ -1474,7 +1611,6 @@ class _OrdersScreenState extends State<OrdersScreen> {
       "date": DateTime.now(),
     },
   ];
-
   void updateOrder(int index, String newStatus) {
     setState(() {
       orders[index]["status"] = newStatus;
@@ -1607,14 +1743,13 @@ class _OrdersScreenState extends State<OrdersScreen> {
     );
   }
 }
-//--------- srevice provider profile------//
 
+//--------- srevice provider profile------//
 class ServiceProviderProfileScreen extends StatefulWidget {
   final String firstName;
   final String lastName;
   final String email;
   final String phone;
-
   const ServiceProviderProfileScreen({
     Key? key,
     required this.firstName,
@@ -1622,7 +1757,6 @@ class ServiceProviderProfileScreen extends StatefulWidget {
     required this.email,
     required this.phone,
   }) : super(key: key);
-
   @override
   State<ServiceProviderProfileScreen> createState() =>
       _ServiceProviderProfileScreenState();
@@ -1634,7 +1768,6 @@ class _ServiceProviderProfileScreenState
   late String lastName;
   late String email;
   late String phone;
-
   @override
   void initState() {
     super.initState();
@@ -1647,7 +1780,6 @@ class _ServiceProviderProfileScreenState
   @override
   Widget build(BuildContext context) {
     const primaryColor = Color(0xFFB68645);
-
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -1672,7 +1804,6 @@ class _ServiceProviderProfileScreenState
               ),
             ),
             const SizedBox(height: 16),
-
             // الاسم الكامل
             Text(
               "$firstName $lastName",
@@ -1683,14 +1814,12 @@ class _ServiceProviderProfileScreenState
               ),
             ),
             const SizedBox(height: 8),
-
             // البريد الإلكتروني
             Text(
               email,
               style: const TextStyle(fontSize: 16, color: Colors.black54),
             ),
             const SizedBox(height: 4),
-
             // رقم الهاتف
             Text(
               phone,
@@ -1699,7 +1828,6 @@ class _ServiceProviderProfileScreenState
             const SizedBox(height: 24),
             const Divider(thickness: 1),
             const SizedBox(height: 12),
-
             // إعدادات الحساب
             _buildSettingTile(
               Icons.edit,
@@ -1782,7 +1910,6 @@ class EditServiceProviderProfileScreen extends StatefulWidget {
   final String lastName;
   final String email;
   final String phone;
-
   const EditServiceProviderProfileScreen({
     Key? key,
     required this.firstName,
@@ -1790,7 +1917,6 @@ class EditServiceProviderProfileScreen extends StatefulWidget {
     required this.email,
     required this.phone,
   }) : super(key: key);
-
   @override
   State<EditServiceProviderProfileScreen> createState() =>
       _EditServiceProviderProfileScreenState();
@@ -1802,7 +1928,6 @@ class _EditServiceProviderProfileScreenState
   late TextEditingController lastNameController;
   late TextEditingController emailController;
   late TextEditingController phoneController;
-
   @override
   void initState() {
     super.initState();
@@ -1824,7 +1949,6 @@ class _EditServiceProviderProfileScreenState
   @override
   Widget build(BuildContext context) {
     const primaryColor = Color(0xFFB68645);
-
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -1918,7 +2042,6 @@ class _EditServiceProviderProfileScreenState
 // ====================== Change Password Screen ======================
 class ChangePasswordScreen extends StatefulWidget {
   const ChangePasswordScreen({Key? key}) : super(key: key);
-
   @override
   State<ChangePasswordScreen> createState() => _ChangePasswordScreenState();
 }
@@ -1927,13 +2050,10 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
   bool _obscureCurrent = true;
   bool _obscureNew = true;
   bool _obscureConfirm = true;
-
   final TextEditingController currentController = TextEditingController();
   final TextEditingController newController = TextEditingController();
   final TextEditingController confirmController = TextEditingController();
-
   String? errorMessage;
-
   @override
   void dispose() {
     currentController.dispose();
@@ -1957,11 +2077,9 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
       confirmController.text.isNotEmpty &&
       newController.text.isNotEmpty &&
       confirmController.text == newController.text;
-
   @override
   Widget build(BuildContext context) {
     const primaryColor = Color(0xFFB68645);
-
     return Scaffold(
       appBar: AppBar(
         backgroundColor: primaryColor,
@@ -2025,7 +2143,6 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
               onChanged: (_) =>
                   setState(() {}), // ✅ تحديث الرسالة أثناء الكتابة
             ),
-
             // ✅ الرسالة تحت confirm password
             const SizedBox(height: 6),
             if (confirmController.text.isNotEmpty)
@@ -2039,7 +2156,6 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                   fontWeight: FontWeight.bold,
                 ),
               ),
-
             const SizedBox(height: 12),
             if (!isPasswordValid && newController.text.isNotEmpty)
               const Text(

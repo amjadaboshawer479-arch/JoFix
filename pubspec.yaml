@@ -28,14 +28,24 @@ environment:
 # the latest version available on pub.dev. To see which dependencies have newer
 # versions available, run `flutter pub outdated`.
 dependencies:
+  flutter_facebook_auth: ^6.0.0
+  firebase_auth: ^6.1.1
+  firebase_core: ^4.2.0
+  cloud_firestore: ^6.0.3
+  google_sign_in: ^6.3.0
+
+  
   flutter:
     sdk: flutter
+  animated_text_kit: ^4.2.2
+
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
 
 dev_dependencies:
+  
   flutter_test:
     sdk: flutter
 
@@ -59,8 +69,14 @@ flutter:
 
   # To add assets to your application, add an assets section, like this:
   assets:
-      - imagee\Screenshot 2025-09-23 154508.png
-     
+    - imagee/adah.jpg
+    - imagee/house clening.jpg
+    - imagee/handyman.jpg
+    - imagee/nirs.jpg
+    - imagee/shakosh.jpg
+    - imagee/sandoq.jpg
+
+
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

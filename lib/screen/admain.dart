@@ -4,7 +4,6 @@ import 'package:amjad/screen/login_screen.dart';
 // ================== Admin Login Screen ==================
 class AdminLoginScreen extends StatefulWidget {
   const AdminLoginScreen({super.key});
-
   @override
   State<AdminLoginScreen> createState() => _AdminLoginScreenState();
 }
@@ -13,7 +12,6 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
   final TextEditingController usernameController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
   String? errorMessage;
-
   @override
   void dispose() {
     usernameController.dispose();
@@ -42,7 +40,6 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
   @override
   Widget build(BuildContext context) {
     const Color brown = Color(0xFFB68645);
-
     return Scaffold(
       appBar: AppBar(
         backgroundColor: brown,
@@ -98,11 +95,9 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
 // ================== Admin Dashboard ==================
 class AdminDashboard extends StatelessWidget {
   const AdminDashboard({super.key});
-
   @override
   Widget build(BuildContext context) {
     const Color brown = Color(0xFFB68645);
-
     return Scaffold(
       appBar: AppBar(
         backgroundColor: brown,
@@ -188,17 +183,14 @@ class AdminDashboard extends StatelessWidget {
 }
 
 //-----------manage user from adman-------//
-
 class ManageUsersPage extends StatefulWidget {
   const ManageUsersPage({Key? key}) : super(key: key);
-
   @override
   State<ManageUsersPage> createState() => _ManageUsersPageState();
 }
 
 class _ManageUsersPageState extends State<ManageUsersPage> {
   final Color primaryColor = const Color(0xFFB68645);
-
   List<Map<String, String>> allUsers = [
     {
       "firstName": "Ahmad",
@@ -225,10 +217,8 @@ class _ManageUsersPageState extends State<ManageUsersPage> {
       "status": "Active",
     },
   ];
-
   List<Map<String, String>> users = [];
   String filterType = "All";
-
   @override
   void initState() {
     super.initState();
@@ -435,9 +425,7 @@ class _ManageUsersPageState extends State<ManageUsersPage> {
 // ====================== Edit User Screen ======================
 class EditUserScreen extends StatefulWidget {
   final Map<String, String> user;
-
   const EditUserScreen({Key? key, required this.user}) : super(key: key);
-
   @override
   State<EditUserScreen> createState() => _EditUserScreenState();
 }
@@ -447,7 +435,6 @@ class _EditUserScreenState extends State<EditUserScreen> {
   late TextEditingController lastNameController;
   late TextEditingController emailController;
   late TextEditingController phoneController;
-
   @override
   void initState() {
     super.initState();
@@ -469,7 +456,6 @@ class _EditUserScreenState extends State<EditUserScreen> {
   @override
   Widget build(BuildContext context) {
     const primaryColor = Color(0xFFB68645);
-
     return Scaffold(
       appBar: AppBar(
         backgroundColor: primaryColor,
@@ -531,17 +517,14 @@ class _EditUserScreenState extends State<EditUserScreen> {
 }
 
 //---------manage services--------//
-
 class ManageServicesScreen extends StatefulWidget {
   const ManageServicesScreen({Key? key}) : super(key: key);
-
   @override
   State<ManageServicesScreen> createState() => _ManageServicesScreenState();
 }
 
 class _ManageServicesScreenState extends State<ManageServicesScreen> {
   static const primaryColor = Color(0xFFB68645);
-
   List<Map<String, dynamic>> services = [
     {
       "name": "House Cleaning",
@@ -565,10 +548,8 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
       "active": true,
     },
   ];
-
   String searchQuery = "";
   String filter = "All"; // All, Active, Inactive
-
   void _showServiceDialog({Map<String, dynamic>? service, int? index}) {
     final nameController = TextEditingController(text: service?['name'] ?? "");
     final descController = TextEditingController(
@@ -581,7 +562,6 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
       text: service?['provider'] ?? "",
     );
     bool active = service?['active'] ?? true;
-
     showDialog(
       context: context,
       builder: (context) {
@@ -639,7 +619,6 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
                     if (nameController.text.isEmpty ||
                         descController.text.isEmpty)
                       return;
-
                     final newService = {
                       "name": nameController.text,
                       "description": descController.text,
@@ -647,7 +626,6 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
                       "provider": providerController.text,
                       "active": active,
                     };
-
                     setState(() {
                       if (service == null) {
                         services.add(newService);
@@ -655,7 +633,6 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
                         services[index!] = newService;
                       }
                     });
-
                     Navigator.pop(context);
                   },
                   child: Text(
@@ -816,17 +793,14 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
 }
 
 //-------manage post------//
-
 class ManagePostsScreen extends StatefulWidget {
   const ManagePostsScreen({Key? key}) : super(key: key);
-
   @override
   State<ManagePostsScreen> createState() => _ManagePostsScreenState();
 }
 
 class _ManagePostsScreenState extends State<ManagePostsScreen> {
   final Color primaryColor = const Color(0xFFB68645);
-
   List<Map<String, dynamic>> posts = [
     {
       "title": "Cleaning Tips",
@@ -843,10 +817,8 @@ class _ManagePostsScreenState extends State<ManagePostsScreen> {
       "status": "Hidden",
     },
   ];
-
   String searchQuery = "";
   String filter = "All";
-
   List<Map<String, dynamic>> get filteredPosts {
     return posts.where((post) {
       final matchesSearch =
@@ -867,7 +839,6 @@ class _ManagePostsScreenState extends State<ManagePostsScreen> {
       text: post?["author"] ?? "Admin",
     );
     String status = post?["status"] ?? "Published";
-
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -924,7 +895,6 @@ class _ManagePostsScreenState extends State<ManagePostsScreen> {
                 );
                 return;
               }
-
               final newPost = {
                 "title": titleController.text,
                 "content": contentController.text,
@@ -932,7 +902,6 @@ class _ManagePostsScreenState extends State<ManagePostsScreen> {
                 "date": DateTime.now(),
                 "status": status,
               };
-
               setState(() {
                 if (post == null) {
                   posts.add(newPost);
@@ -940,7 +909,6 @@ class _ManagePostsScreenState extends State<ManagePostsScreen> {
                   posts[index!] = newPost;
                 }
               });
-
               Navigator.pop(context);
             },
             child: Text(
@@ -1117,13 +1085,10 @@ class _ManagePostsScreenState extends State<ManagePostsScreen> {
 
 class PostDetailsScreen extends StatelessWidget {
   final Map<String, dynamic> post;
-
   const PostDetailsScreen({Key? key, required this.post}) : super(key: key);
-
   @override
   Widget build(BuildContext context) {
     const primaryColor = Color(0xFFB68645);
-
     return Scaffold(
       appBar: AppBar(
         backgroundColor: primaryColor,

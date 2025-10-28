@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:amjad/screen/login_screen.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 
 //------------------ 2. Phone Number Screen ------------------//
+// ------------------- Client Home Page ------------------- //
 class ClientHomePage extends StatefulWidget {
   const ClientHomePage({super.key});
-
   @override
   State<ClientHomePage> createState() => _ClientHomePageState();
 }
@@ -13,16 +18,16 @@ class _ClientHomePageState extends State<ClientHomePage> {
   final phoneController = TextEditingController();
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
-
   bool isPhoneValid = false;
   bool isEmailValid = false;
   bool isPasswordValid = false;
   bool isPasswordVisible = false;
+  String? loginError; // 🔥 متغير لعرض الخطأ تحت الحقول
 
   // Phone validation
   void _checkPhone(String value) {
     setState(() {
-      isPhoneValid = value.trim().length >= 13; // مثال بسيط للتحقق من الهاتف
+      isPhoneValid = value.trim().length >= 13; // +9627XXXXXXXX
     });
   }
 
@@ -40,18 +45,179 @@ class _ClientHomePageState extends State<ClientHomePage> {
     final hasLower = value.contains(RegExp(r'[a-z]'));
     final hasDigit = value.contains(RegExp(r'[0-9]'));
     final hasSpecial = value.contains(RegExp(r'[!@#\$%^&*(),.?":{}|<>]'));
-
     setState(() {
       isPasswordValid =
           value.length >= 8 && hasUpper && hasLower && hasDigit && hasSpecial;
     });
   }
 
+  // 🔥 تسجيل الدخول بالبريد وكلمة السر
+  Future<void> _loginClient() async {
+    final email = emailController.text.trim();
+    final password = passwordController.text.trim();
+    final phone = phoneController.text.trim();
+
+    setState(() {
+      loginError = null;
+    });
+
+    try {
+      final auth = FirebaseAuth.instance;
+      final cred = await auth.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+
+      final uid = cred.user?.uid;
+      if (uid == null) throw Exception("User ID not found");
+
+      final firestore = FirebaseFirestore.instance;
+      final doc = await firestore.collection('clients').doc(uid).get();
+
+      if (!doc.exists) {
+        setState(() {
+          loginError = "User not found in Firestore.";
+        });
+        return;
+      }
+
+      final data = doc.data()!;
+      final storedPhone = (data['phone'] ?? '') as String;
+
+      if (storedPhone.isNotEmpty && storedPhone != phone) {
+        setState(() {
+          loginError = "Phone number doesn't match our records.";
+        });
+        return;
+      }
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Login successful!")));
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const ActivityHomeScreen()),
+      );
+    } on FirebaseAuthException catch (e) {
+      setState(() {
+        if (e.code == 'user-not-found') {
+          loginError = "User not found in Firebase Authentication.";
+        } else if (e.code == 'wrong-password') {
+          loginError = "Wrong password.";
+        } else {
+          loginError = e.message ?? "Login failed.";
+        }
+      });
+    } catch (e) {
+      setState(() {
+        loginError = e.toString();
+      });
+    }
+  }
+
+  // 🔥 تسجيل الدخول بالفيسبوك
+  Future<void> _loginWithFacebook() async {
+    try {
+      final result = await FacebookAuth.instance.login();
+      if (result.status != LoginStatus.success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Facebook login failed: ${result.status}")),
+        );
+        return;
+      }
+
+      final accessToken = result.accessToken!;
+      final credential = FacebookAuthProvider.credential(accessToken.token);
+
+      final userCredential = await FirebaseAuth.instance.signInWithCredential(
+        credential,
+      );
+
+      final user = userCredential.user;
+      if (user == null) throw Exception("User not found");
+
+      final uid = user.uid;
+      final email = user.email ?? "";
+      final displayName = user.displayName ?? "";
+      final phone = "";
+
+      final docRef = FirebaseFirestore.instance.collection("clients").doc(uid);
+      final doc = await docRef.get();
+
+      if (!doc.exists) {
+        await docRef.set({
+          "uid": uid,
+          "email": email,
+          "fullName": displayName,
+          "phone": phone,
+          "createdAt": FieldValue.serverTimestamp(),
+        });
+      }
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const ActivityHomeScreen()),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Error: $e")));
+    }
+  }
+
+  // 🔥 تسجيل الدخول بجوجل
+  Future<void> _loginWithGoogle() async {
+    try {
+      final googleUser = await GoogleSignIn().signIn();
+      if (googleUser == null) return;
+
+      final googleAuth = await googleUser.authentication;
+      final credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+
+      final userCredential = await FirebaseAuth.instance.signInWithCredential(
+        credential,
+      );
+
+      final user = userCredential.user;
+      if (user == null) throw Exception("User not found");
+
+      final uid = user.uid;
+      final email = user.email ?? "";
+      final displayName = user.displayName ?? "";
+      final phone = "";
+
+      final docRef = FirebaseFirestore.instance.collection("clients").doc(uid);
+      final doc = await docRef.get();
+
+      if (!doc.exists) {
+        await docRef.set({
+          "uid": uid,
+          "email": email,
+          "fullName": displayName,
+          "phone": phone,
+          "createdAt": FieldValue.serverTimestamp(),
+        });
+      }
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const ActivityHomeScreen()),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Error: $e")));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     const Color borderColor = Color(0xFFB68645);
     const Color buttonColor = Color(0xFFB68645);
-
     bool allValid = isPhoneValid && isEmailValid && isPasswordValid;
 
     return Scaffold(
@@ -162,23 +328,22 @@ class _ClientHomePageState extends State<ClientHomePage> {
               "- Special character (!@#\$%^&*)",
               style: TextStyle(color: borderColor, fontSize: 12),
             ),
-            const SizedBox(height: 32),
+            const SizedBox(height: 16),
 
-            // Continue Button
+            // 🔥 رسالة الخطأ في حالة المستخدم غير موجود
+            if (loginError != null)
+              Text(
+                loginError!,
+                style: const TextStyle(color: Colors.red, fontSize: 13),
+              ),
+            const SizedBox(height: 16),
+
+            // Login Button
             SizedBox(
               width: double.infinity,
               height: 48,
               child: ElevatedButton(
-                onPressed: allValid
-                    ? () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const ActivityHomeScreen(),
-                          ),
-                        );
-                      }
-                    : null,
+                onPressed: allValid ? _loginClient : null,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: allValid ? buttonColor : Colors.grey,
                   shape: RoundedRectangleBorder(
@@ -206,18 +371,15 @@ class _ClientHomePageState extends State<ClientHomePage> {
             ),
             const SizedBox(height: 24),
 
-            // Social Buttons
-            _buildSocialButton("Continue With Email"),
-            const SizedBox(height: 12),
-            _buildSocialButton("Continue With Google"),
-            const SizedBox(height: 12),
-            _buildSocialButton("Continue With Apple"),
+            // ✅ Social Buttons (Google & Facebook only)
+            _buildSocialButton("Continue With Google", isFacebook: false),
             const SizedBox(height: 12),
             _buildSocialButton(
               "Continue With Facebook",
               icon: Icons.facebook,
               isFacebook: true,
             ),
+
             const SizedBox(height: 24),
 
             // Don’t have an account? + Sign Up
@@ -228,31 +390,21 @@ class _ClientHomePageState extends State<ClientHomePage> {
                   "Don’t have an account?",
                   style: TextStyle(fontSize: 14, color: Colors.black54),
                 ),
-                Builder(
-                  builder: (context) {
-                    return TextButton(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const SignupScreen(),
-                          ),
-                        );
-
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text("Sign Up clicked")),
-                        );
-                      },
-                      child: const Text(
-                        "Sign Up",
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          color: borderColor,
-                        ),
-                      ),
+                TextButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const SignupScreen()),
                     );
                   },
+                  child: const Text(
+                    "Sign Up",
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: borderColor,
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -262,6 +414,7 @@ class _ClientHomePageState extends State<ClientHomePage> {
     );
   }
 
+  // Social Button builder
   Widget _buildSocialButton(
     String text, {
     IconData? icon,
@@ -271,9 +424,7 @@ class _ClientHomePageState extends State<ClientHomePage> {
       width: double.infinity,
       height: 48,
       child: OutlinedButton.icon(
-        onPressed: () {
-          // هون بتحط اللوجيك الخاص بكل زر
-        },
+        onPressed: isFacebook ? _loginWithFacebook : _loginWithGoogle,
         style: OutlinedButton.styleFrom(
           side: const BorderSide(color: Colors.black12),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
@@ -291,12 +442,10 @@ class _ClientHomePageState extends State<ClientHomePage> {
 }
 
 //------------------ 3. SignUp Screen ------------------//
-
 // الصفحة الرابعة التي ستستقبل الأسماء
-
+// شاشة تسجيل العميل
 class SignupScreen extends StatefulWidget {
   const SignupScreen({Key? key}) : super(key: key);
-
   @override
   State<SignupScreen> createState() => _SignupScreenState();
 }
@@ -314,13 +463,11 @@ class _SignupScreenState extends State<SignupScreen> {
   String? phoneError;
   String? emailError;
   String? passError;
-
   bool _obscurePassword = true;
 
   // ===== شروط التحقق =====
   bool get isFirstValid => firstNameController.text.trim().isNotEmpty;
   bool get isLastValid => lastNameController.text.trim().isNotEmpty;
-
   bool get isPhoneValid {
     final phone = phoneController.text.trim();
     return phone.isNotEmpty && phone.startsWith("+962") && phone.length > 4;
@@ -343,27 +490,17 @@ class _SignupScreenState extends State<SignupScreen> {
   }
 
   // ===== Validation functions =====
-  void validateFirst() {
-    setState(() => firstNameError = isFirstValid ? null : 'Required');
-  }
-
-  void validateLast() {
-    setState(() => lastNameError = isLastValid ? null : 'Required');
-  }
-
-  void validatePhone() {
-    setState(
-      () => phoneError = isPhoneValid ? null : 'Not valid Jordanian number',
-    );
-  }
-
-  void validateEmail() {
-    setState(() => emailError = isEmailValid ? null : 'Not valid email');
-  }
-
-  void validatePass() {
-    setState(() => passError = isPassValid ? null : 'Password not valid');
-  }
+  void validateFirst() =>
+      setState(() => firstNameError = isFirstValid ? null : 'Required');
+  void validateLast() =>
+      setState(() => lastNameError = isLastValid ? null : 'Required');
+  void validatePhone() => setState(
+    () => phoneError = isPhoneValid ? null : 'Not valid Jordanian number',
+  );
+  void validateEmail() =>
+      setState(() => emailError = isEmailValid ? null : 'Not valid email');
+  void validatePass() =>
+      setState(() => passError = isPassValid ? null : 'Password not valid');
 
   @override
   void dispose() {
@@ -373,6 +510,71 @@ class _SignupScreenState extends State<SignupScreen> {
     emailController.dispose();
     passController.dispose();
     super.dispose();
+  }
+
+  // 🔥 دالة إنشاء الحساب والتخزين في الكوليكشن clients
+  Future<void> _handleSignup() async {
+    final firstName = firstNameController.text.trim();
+    final lastName = lastNameController.text.trim();
+    final phone = phoneController.text.trim();
+    final email = emailController.text.trim();
+    final password = passController.text;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator()),
+    );
+
+    try {
+      // 1️⃣ إنشاء الحساب داخل Firebase Authentication
+      final auth = FirebaseAuth.instance;
+      final cred = await auth.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+      await cred.user!.sendEmailVerification();
+
+      final uid = cred.user?.uid;
+      if (uid == null) throw Exception("User ID not found");
+
+      // 2️⃣ إضافة بيانات المستخدم داخل كوليكشن clients
+      final firestore = FirebaseFirestore.instance;
+      await firestore.collection('clients').doc(cred.user!.uid).set({
+        'firstName': firstName,
+        'lastName': lastName,
+        'phone': phone,
+        'email': email,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+
+      Navigator.pop(context); // إغلاق التحميل
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Please check your inbox to verifay your email."),
+        ),
+      );
+
+      // التنقل للشاشة الرئيسية بعد التسجيل
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => VerifyEmailScreen(user: cred.user!),
+        ),
+      );
+    } on FirebaseAuthException catch (e) {
+      Navigator.pop(context);
+      String msg = "Signup failed";
+      if (e.code == 'email-already-in-use')
+        msg = "This email is already in use.";
+      if (e.code == 'weak-password') msg = "Password too weak.";
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+    } catch (e) {
+      Navigator.pop(context);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(e.toString())));
+    }
   }
 
   @override
@@ -406,7 +608,7 @@ class _SignupScreenState extends State<SignupScreen> {
             ),
             const SizedBox(height: 24),
 
-            // First Name
+            // ========== TextFields ==========
             TextField(
               controller: firstNameController,
               decoration: InputDecoration(
@@ -417,8 +619,6 @@ class _SignupScreenState extends State<SignupScreen> {
               onChanged: (_) => validateFirst(),
             ),
             const SizedBox(height: 16),
-
-            // Last Name
             TextField(
               controller: lastNameController,
               decoration: InputDecoration(
@@ -429,8 +629,6 @@ class _SignupScreenState extends State<SignupScreen> {
               onChanged: (_) => validateLast(),
             ),
             const SizedBox(height: 16),
-
-            // Phone Number
             TextField(
               controller: phoneController,
               keyboardType: TextInputType.phone,
@@ -442,16 +640,12 @@ class _SignupScreenState extends State<SignupScreen> {
               onChanged: (_) => validatePhone(),
             ),
             const SizedBox(height: 12),
-
-            // ملاحظة تظهر فقط إذا الرقم مش صحيح
             if (!isPhoneValid && phoneController.text.isNotEmpty)
               const Text(
                 "Phone number must start with +962",
                 style: TextStyle(fontSize: 13, color: Color(0xFFB68645)),
               ),
             const SizedBox(height: 16),
-
-            // Email
             TextField(
               controller: emailController,
               keyboardType: TextInputType.emailAddress,
@@ -463,8 +657,6 @@ class _SignupScreenState extends State<SignupScreen> {
               onChanged: (_) => validateEmail(),
             ),
             const SizedBox(height: 16),
-
-            // Password
             TextField(
               controller: passController,
               obscureText: _obscurePassword,
@@ -485,7 +677,6 @@ class _SignupScreenState extends State<SignupScreen> {
               ),
               onChanged: (_) => validatePass(),
             ),
-
             const SizedBox(height: 12),
             const Text(
               "Password must contain:\n"
@@ -496,33 +687,22 @@ class _SignupScreenState extends State<SignupScreen> {
               "• One special character (!@#\$&*~)",
               style: TextStyle(fontSize: 13, color: Color(0xFFB68645)),
             ),
-
             const SizedBox(height: 32),
 
-            // Next Button
+            // ========== Sign Up Button ==========
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: allValid ? Color(0xFFB68645) : Colors.grey,
+                  backgroundColor: allValid
+                      ? const Color(0xFFB68645)
+                      : Colors.grey,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
                 ),
-                onPressed: allValid
-                    ? () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => ActivityHomeScreen(
-                              firstName: firstNameController.text.trim(),
-                              lastName: lastNameController.text.trim(),
-                            ),
-                          ),
-                        );
-                      }
-                    : null,
+                onPressed: allValid ? _handleSignup : null,
                 child: const Text(
                   "Sign UP",
                   style: TextStyle(fontSize: 16, color: Colors.white),
@@ -536,17 +716,139 @@ class _SignupScreenState extends State<SignupScreen> {
   }
 }
 
-// dummy ActivityHomeScreen
+//verefay you email
+class VerifyEmailScreen extends StatefulWidget {
+  final User user;
+  const VerifyEmailScreen({Key? key, required this.user}) : super(key: key);
+
+  @override
+  State<VerifyEmailScreen> createState() => _VerifyEmailScreenState();
+}
+
+class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
+  bool _isVerified = false;
+  bool _isLoading = false;
+
+  Future<void> _checkVerification() async {
+    setState(() => _isLoading = true);
+    await widget.user.reload();
+    final updatedUser = FirebaseAuth.instance.currentUser;
+    if (updatedUser != null && updatedUser.emailVerified) {
+      setState(() => _isVerified = true);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Email verified successfully!")),
+      );
+      // ✅ الانتقال إلى الشاشة الرئيسية
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => ActivityHomeScreen(
+            firstName: "", // ممكن تمرر الاسم إذا بدك
+            lastName: "",
+            email: updatedUser.email ?? "",
+            phone: "",
+          ),
+        ),
+      );
+    } else {
+      setState(() => _isLoading = false);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Email not verified yet.")));
+    }
+  }
+
+  Future<void> _resendEmail() async {
+    try {
+      await widget.user.sendEmailVerification();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Verification email resent.")),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Error: ${e.toString()}")));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("Verify your Email"),
+        centerTitle: true,
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
+      ),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(
+                Icons.email_outlined,
+                size: 80,
+                color: Color(0xFFB68645),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                "A verification email has been sent to:\n${FirebaseAuth.instance.currentUser?.email ?? ''}",
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 16),
+              ),
+              const SizedBox(height: 20),
+              const Text(
+                "Please check your inbox and click the verification link.\nAfter that, click the button below:",
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.black54),
+              ),
+              const SizedBox(height: 30),
+              ElevatedButton(
+                onPressed: _isLoading ? null : _checkVerification,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFB68645),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 40,
+                    vertical: 14,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                child: _isLoading
+                    ? const CircularProgressIndicator(color: Colors.white)
+                    : const Text("I verified my email"),
+              ),
+              const SizedBox(height: 16),
+              TextButton(
+                onPressed: _resendEmail,
+                child: const Text(
+                  "Resend verification email",
+                  style: TextStyle(color: Color(0xFFB68645)),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
 
 //-----------active home screen-----//
-
 class ActivityHomeScreen extends StatefulWidget {
   final String firstName;
   final String lastName;
-
-  const ActivityHomeScreen({Key? key, this.firstName = '', this.lastName = ''})
-    : super(key: key);
-
+  final String email;
+  final String phone;
+  const ActivityHomeScreen({
+    Key? key,
+    this.firstName = '',
+    this.lastName = '',
+    this.email = '',
+    this.phone = '',
+  }) : super(key: key);
   @override
   State<ActivityHomeScreen> createState() => _ActivityHomeScreenState();
 }
@@ -554,19 +856,16 @@ class ActivityHomeScreen extends StatefulWidget {
 class _ActivityHomeScreenState extends State<ActivityHomeScreen> {
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
-
   final List<Map<String, String>> activities = [
-    {"title": "House cleaning", "image": "images/houseCleaning.png"},
-    {"title": "Handyman", "image": "https://via.placeholder.com/80"},
-    {"title": "Home nursing", "image": "https://via.placeholder.com/80"},
-    {"title": "Local moving", "image": "https://via.placeholder.com/80"},
-    {"title": "Junk removal", "image": "https://via.placeholder.com/80"},
-    {"title": "Furniture assembly", "image": "https://via.placeholder.com/80"},
+    {"title": "House cleaning", "image": "imagee/house clening.jpg"},
+    {"title": "Handyman", "image": "imagee/handyman.jpg"},
+    {"title": "Home nursing", "image": "imagee/nirs.jpg"},
+    {"title": "Local moving", "image": "imagee/sandoq.jpg"},
+    {"title": "Junk removal", "image": "imagee/adah.jpg"},
+    {"title": "Furniture assembly", "image": "imagee/shakosh.jpg"},
   ];
-
   List<Map<String, String>> filteredActivities = [];
   int _selectedIndex = 2; // Service بالمنتصف
-
   @override
   void initState() {
     super.initState();
@@ -673,8 +972,7 @@ class _ActivityHomeScreenState extends State<ActivityHomeScreen> {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (context) =>
-                                    const HouseCleaningProsPage(),
+                                builder: (context) => const HouseCleaningPage(),
                               ),
                             );
                           }
@@ -713,16 +1011,12 @@ class _ActivityHomeScreenState extends State<ActivityHomeScreen> {
           setState(() {
             _selectedIndex = index;
           });
-
           if (index == 3) {
             // Messages
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => const ChatScreen(
-                  clientName: "Client",
-                  providerName: "Service Provider",
-                ),
+                builder: (context) => const ClientChatListScreen(),
               ),
             );
           } else if (index == 4) {
@@ -767,11 +1061,240 @@ class _ActivityHomeScreenState extends State<ActivityHomeScreen> {
   }
 }
 
-//------- اذا كبس على hose cleaning من جوا ---//
+class HouseCleaningPage extends StatefulWidget {
+  const HouseCleaningPage({Key? key}) : super(key: key);
+  @override
+  State<HouseCleaningPage> createState() => _HouseCleaningPageState();
+}
 
+Widget buildServiceCard({
+  required String image,
+  required String title,
+  required String price,
+  required String info,
+  VoidCallback? onTap,
+}) {
+  return InkWell(
+    onTap: onTap,
+    borderRadius: BorderRadius.circular(12),
+    child: Card(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      margin: EdgeInsets.symmetric(vertical: 8),
+      elevation: 3,
+      child: Padding(
+        padding: const EdgeInsets.all(12.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(10),
+                  child: Image.asset(
+                    image,
+                    height: 60,
+                    width: 60,
+                    fit: BoxFit.cover,
+                  ),
+                ),
+                SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        price,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.black.withOpacity(0.6),
+                        ),
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        "JoFix Friendly",
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.green,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                ElevatedButton(
+                  onPressed: () {},
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Color(0xFFB68645),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: Text(
+                    "Search pros",
+                    style: TextStyle(color: Colors.white),
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: 10),
+            Text(info, style: TextStyle(fontSize: 13, color: Colors.black87)),
+            SizedBox(height: 6),
+            Text(
+              "Tips & info",
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.blue,
+                decoration: TextDecoration.underline,
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
+class _HouseCleaningPageState extends State<HouseCleaningPage> {
+  int _selectedIndex = 2; // نحدد إنه Service هو المختار
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text("Keep things clean", style: TextStyle(color: Colors.white)),
+        centerTitle: true,
+        backgroundColor: Color(0xFFB68645),
+      ),
+      body: SingleChildScrollView(
+        padding: EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              "Get your space sparkling and clutter-free, then build habits to help keep it that way.",
+              style: TextStyle(fontSize: 14, color: Colors.black87),
+            ),
+            SizedBox(height: 20),
+
+            /// Section 1
+            Text(
+              "Start with the basics",
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFFB68645),
+              ),
+            ),
+            SizedBox(height: 10),
+            buildServiceCard(
+              image: "assets/house_cleaning.jpg",
+              title: "House Cleaning",
+              price: "JOD 30 - 180 avg.",
+              info:
+                  "Did you know? To work properly, most antibacterial sprays need to sit on a surface for 60 seconds before wiping.",
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const HouseCleaningProsPage(),
+                  ),
+                );
+              },
+            ),
+            buildServiceCard(
+              image: "assets/clear_clutter.jpg",
+              title: "Clear Out Clutter",
+              price: "JOD 40 - 270 avg.",
+              info: "",
+            ),
+            buildServiceCard(
+              image: "assets/air_filters.jpg",
+              title: "Replace Air Filters",
+              price: "JOD 25 - 65 avg.",
+              info: "",
+            ),
+            SizedBox(height: 20),
+
+            /// Section 2
+            Text(
+              "Really get in there",
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 10),
+            buildServiceCard(
+              image: "assets/deep_cleaning.jpg",
+              title: "Deep Cleaning",
+              price: "JOD 60 - 270 avg.",
+              info:
+                  "Did you know? The stuff that builds up on shower doors is called limescale. You can clean it with lemon juice or vinegar.",
+            ),
+            buildServiceCard(
+              image: "assets/pressure_washing.jpg",
+              title: "Pressure Washing",
+              price: "JOD 150 - 390 avg.",
+              info: "",
+            ),
+            buildServiceCard(
+              image: "assets/carpet_cleaning.jpg",
+              title: "Carpet Cleaning",
+              price: "JOD 40 - 150 avg.",
+              info: "",
+            ),
+          ],
+        ),
+      ),
+      // 👇 الـ BottomNavigationBar
+      bottomNavigationBar: BottomNavigationBar(
+        type: BottomNavigationBarType.fixed,
+        currentIndex: _selectedIndex,
+        selectedItemColor: Colors.black,
+        unselectedItemColor: Colors.black54,
+        onTap: (index) {
+          setState(() {
+            _selectedIndex = index;
+          });
+          // هون ممكن تعمل Navigation حسب كل أيقونة إذا بدك
+          if (index == 2) {
+            // already on Service page
+          }
+        },
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.notifications, color: Color(0xFFB68645)),
+            label: "Notification",
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.search, color: Color(0xFFB68645)),
+            label: "Search",
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home_repair_service, color: Color(0xFFB68645)),
+            label: "Service",
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.message, color: Color(0xFFB68645)),
+            label: "Message",
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person, color: Color(0xFFB68645)),
+            label: "Profile",
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+//------- اذا كبس على hose cleaning من جوا ---//
 class HouseCleaningProsPage extends StatelessWidget {
   const HouseCleaningProsPage({Key? key}) : super(key: key);
-
   @override
   Widget build(BuildContext context) {
     // بيانات مؤقتة
@@ -808,7 +1331,6 @@ class HouseCleaningProsPage extends StatelessWidget {
         "image": "assets/cleaner4.jpg",
       },
     ];
-
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.white,
@@ -937,21 +1459,19 @@ class HouseCleaningProsPage extends StatelessWidget {
     );
   }
 }
-//-------في حال كبس على read more ------//
 
+//-------في حال كبس على read more ------//
 class CleanerDetailsPage extends StatelessWidget {
   final String name;
   final String image;
-
   const CleanerDetailsPage({Key? key, required this.name, required this.image})
     : super(key: key);
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey[100],
       appBar: AppBar(
-        title: Text(name),
+        title: Text(name, style: TextStyle(color: Colors.white)),
         backgroundColor: const Color(0xFFB68645),
         centerTitle: true,
       ),
@@ -1007,7 +1527,6 @@ class CleanerDetailsPage extends StatelessWidget {
                 ),
               ],
             ),
-
             const SizedBox(height: 16),
 
             /// Your project box
@@ -1038,13 +1557,15 @@ class CleanerDetailsPage extends StatelessWidget {
                           borderRadius: BorderRadius.circular(8),
                         ),
                       ),
-                      child: const Text("Check Availability"),
+                      child: const Text(
+                        "Check Availability",
+                        style: TextStyle(color: Colors.white),
+                      ),
                     ),
                   ],
                 ),
               ),
             ),
-
             const SizedBox(height: 20),
 
             /// About This Pro
@@ -1057,7 +1578,6 @@ class CleanerDetailsPage extends StatelessWidget {
               "I do the best work for a decent price. I have a heart for helping people.",
               style: TextStyle(fontSize: 14, color: Colors.black87),
             ),
-
             const SizedBox(height: 20),
 
             /// Overview
@@ -1070,7 +1590,6 @@ class CleanerDetailsPage extends StatelessWidget {
               "Hired 10 times\nServes Zarqa\nBackground checked",
               style: TextStyle(fontSize: 14, color: Colors.black87),
             ),
-
             const SizedBox(height: 20),
 
             /// Business hours
@@ -1083,7 +1602,6 @@ class CleanerDetailsPage extends StatelessWidget {
               "This pro hasn’t listed their business hours.",
               style: TextStyle(fontSize: 14, color: Colors.black87),
             ),
-
             const SizedBox(height: 20),
 
             /// Payment methods
@@ -1096,7 +1614,6 @@ class CleanerDetailsPage extends StatelessWidget {
               "This pro accepts payments via Cash, Zain Cash, and Bank transfer.",
               style: TextStyle(fontSize: 14, color: Colors.black87),
             ),
-
             const SizedBox(height: 20),
 
             /// Reviews
@@ -1145,7 +1662,6 @@ class CleanerDetailsPage extends StatelessWidget {
                 child: const Text("See More Reviews"),
               ),
             ),
-
             const SizedBox(height: 20),
 
             /// Bottom price box
@@ -1183,7 +1699,10 @@ class CleanerDetailsPage extends StatelessWidget {
                         borderRadius: BorderRadius.circular(8),
                       ),
                     ),
-                    child: const Text("Check Availability"),
+                    child: const Text(
+                      "Check Availability",
+                      style: TextStyle(color: Colors.white),
+                    ),
                   ),
                 ],
               ),
@@ -1195,154 +1714,263 @@ class CleanerDetailsPage extends StatelessWidget {
   }
 }
 
-//------------ chat screen-------//
-class ChatScreen extends StatefulWidget {
-  final String clientName;
-  final String providerName;
-
-  const ChatScreen({
-    Key? key,
-    required this.clientName,
-    required this.providerName,
-  }) : super(key: key);
-
+// ---------------- Client Chat List Screen ---------------- //
+class ClientChatListScreen extends StatelessWidget {
+  const ClientChatListScreen({super.key});
   @override
-  State<ChatScreen> createState() => _ChatScreenState();
+  Widget build(BuildContext context) {
+    const Color primaryColor = Color(0xFFB68645);
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text(
+          'Service Providers',
+          style: TextStyle(color: Colors.white),
+        ),
+        backgroundColor: primaryColor,
+        centerTitle: true,
+      ),
+      body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+        stream: FirebaseFirestore.instance
+            .collection('service_providers')
+            .snapshots(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+            return const Center(child: Text('No service providers found.'));
+          }
+          final providers = snapshot.data!.docs;
+          return ListView.builder(
+            itemCount: providers.length,
+            itemBuilder: (context, index) {
+              final provider = providers[index];
+              final data = provider.data();
+              final fullName =
+                  '${data['firstName'] ?? ''} ${data['lastName'] ?? ''}'.trim();
+              final email = data['email'] ?? 'No email';
+              return Card(
+                margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                child: ListTile(
+                  leading: const CircleAvatar(
+                    backgroundColor: primaryColor,
+                    child: Icon(Icons.person, color: Colors.white),
+                  ),
+                  title: Text(fullName.isEmpty ? 'Unknown Provider' : fullName),
+                  subtitle: Text(email),
+                  trailing: const Icon(Icons.chat, color: Color(0xFFB68645)),
+                  onTap: () {
+                    final currentUser = FirebaseAuth.instance.currentUser;
+                    final currentUserId = currentUser?.uid ?? '';
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ClientChatScreen(
+                          providerId: provider.id,
+                          providerName: fullName,
+                          clientId: currentUserId,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              );
+            },
+          );
+        },
+      ),
+    );
+  }
 }
 
-class _ChatScreenState extends State<ChatScreen> {
-  final TextEditingController _messageController = TextEditingController();
-  final ScrollController _scrollController = ScrollController();
+// ✅ Chat Screen
+class ClientChatScreen extends StatefulWidget {
+  final String clientId;
+  final String providerId;
+  final String providerName;
 
-  // الرسائل محلية
-  List<Map<String, String>> messages = [];
+  const ClientChatScreen({
+    super.key,
 
-  void _sendMessage(String text) {
-    if (text.trim().isEmpty) return;
-
-    // إضافة رسالة العميل
-    setState(() {
-      messages.add({
-        "sender": "client",
-        "message": text,
-        "time": TimeOfDay.now().format(context),
-      });
-    });
-
-    _messageController.clear();
-
-    // Scroll تلقائي لآخر رسالة
-    _scrollToBottom();
-
-    // محاكاة رد من الـ Provider بعد ثواني
-    Future.delayed(const Duration(seconds: 1), () {
-      setState(() {
-        messages.add({
-          "sender": "provider",
-          "message": "Reply from ${widget.providerName}",
-          "time": TimeOfDay.now().format(context),
-        });
-      });
-      _scrollToBottom();
-    });
-  }
-
-  void _scrollToBottom() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_scrollController.hasClients) {
-        _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent + 60,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
-        );
-      }
-    });
-  }
+    required this.clientId,
+    required this.providerId,
+    required this.providerName,
+  });
 
   @override
-  void dispose() {
-    _messageController.dispose();
-    _scrollController.dispose();
-    super.dispose();
+  State<ClientChatScreen> createState() => _ClientChatScreenState();
+}
+
+class _ClientChatScreenState extends State<ClientChatScreen> {
+  final TextEditingController _messageController = TextEditingController();
+  late String chatId;
+
+  @override
+  void initState() {
+    super.initState();
+
+    // ✅ نفس منطق السيرفس بروفايدر
+    chatId = widget.clientId.compareTo(widget.providerId) < 0
+        ? "${widget.clientId}_${widget.providerId}"
+        : "${widget.providerId}_${widget.clientId}";
+  }
+
+  Future<void> _sendMessage() async {
+    final text = _messageController.text.trim();
+    if (text.isEmpty) return;
+
+    final msgData = {
+      'senderId': widget.clientId,
+      'receiverId': widget.providerId,
+      'message': text,
+      'timestamp': FieldValue.serverTimestamp(),
+      'isRead': false,
+    };
+
+    final chatRef = FirebaseFirestore.instance.collection('chats').doc(chatId);
+
+    // ✅ إنشاء أو تحديث الدردشة الأساسية
+    await chatRef.set({
+      'participants': [widget.clientId, widget.providerId],
+      'lastMessage': text,
+      'lastMessageTime': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+
+    // ✅ إضافة الرسالة للمحادثة
+    await chatRef.collection('messages').add(msgData);
+
+    _messageController.clear();
   }
 
   @override
   Widget build(BuildContext context) {
+    const Color primaryColor = Color(0xFFB68645);
+
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.providerName),
-        backgroundColor: const Color(0xFFB68645),
+        backgroundColor: primaryColor,
       ),
       body: Column(
         children: [
+          // ✅ عرض الرسائل
           Expanded(
-            child: ListView.builder(
-              controller: _scrollController,
-              itemCount: messages.length,
-              padding: const EdgeInsets.all(12),
-              itemBuilder: (context, index) {
-                final msg = messages[index];
-                final isClient = msg["sender"] == "client";
-                return Align(
-                  alignment: isClient
-                      ? Alignment.centerRight
-                      : Alignment.centerLeft,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
+            child: StreamBuilder<QuerySnapshot>(
+              stream: FirebaseFirestore.instance
+                  .collection('chats')
+                  .doc(chatId)
+                  .collection('messages')
+                  .orderBy('timestamp', descending: false)
+                  .snapshots(),
+              builder: (context, snapshot) {
+                if (snapshot.hasError) {
+                  return Center(
+                    child: Text(
+                      'Error: ${snapshot.error}',
+                      style: const TextStyle(color: Colors.red),
                     ),
-                    margin: const EdgeInsets.symmetric(vertical: 4),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFB68645),
-                      borderRadius: BorderRadius.only(
-                        topLeft: Radius.circular(isClient ? 12 : 0),
-                        topRight: Radius.circular(isClient ? 0 : 12),
-                        bottomLeft: const Radius.circular(12),
-                        bottomRight: const Radius.circular(12),
+                  );
+                }
+
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                  return const Center(child: Text('No messages yet.'));
+                }
+
+                final messages = snapshot.data!.docs;
+
+                // ✅ نحدّث حالة القراءة
+                for (var doc in messages) {
+                  final data = doc.data() as Map<String, dynamic>;
+                  if (data['receiverId'] == widget.clientId &&
+                      data['isRead'] == false) {
+                    doc.reference.update({'isRead': true});
+                  }
+                }
+
+                return ListView.builder(
+                  padding: const EdgeInsets.all(12),
+                  itemCount: messages.length,
+                  itemBuilder: (context, index) {
+                    final msg = messages[index].data() as Map<String, dynamic>;
+                    final isClient = msg['senderId'] == widget.clientId;
+
+                    final time = msg['timestamp'] != null
+                        ? (msg['timestamp'] as Timestamp)
+                              .toDate()
+                              .toLocal()
+                              .toString()
+                              .substring(11, 16)
+                        : '';
+
+                    return Align(
+                      alignment: isClient
+                          ? Alignment.centerRight
+                          : Alignment.centerLeft,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 8,
+                          horizontal: 12,
+                        ),
+                        margin: const EdgeInsets.symmetric(vertical: 4),
+                        decoration: BoxDecoration(
+                          color: isClient
+                              ? primaryColor.withOpacity(0.8)
+                              : Colors.grey[300],
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              msg['message'] ?? '',
+                              style: TextStyle(
+                                color: isClient ? Colors.white : Colors.black,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              time,
+                              style: TextStyle(
+                                color: isClient
+                                    ? Colors.white70
+                                    : Colors.black54,
+                                fontSize: 10,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          msg["message"]!,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 14,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          msg["time"]!,
-                          style: TextStyle(color: Colors.white70, fontSize: 10),
-                        ),
-                      ],
-                    ),
-                  ),
+                    );
+                  },
                 );
               },
             ),
           ),
-          const Divider(height: 1),
-          Container(
-            color: Colors.white,
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+
+          // ✅ مربع الإرسال
+          Padding(
+            padding: const EdgeInsets.all(12),
             child: Row(
               children: [
                 Expanded(
                   child: TextField(
                     controller: _messageController,
                     decoration: const InputDecoration(
-                      hintText: "Type a message",
-                      border: InputBorder.none,
+                      hintText: "Type a message...",
+                      border: OutlineInputBorder(),
                     ),
-                    textCapitalization: TextCapitalization.sentences,
                   ),
                 ),
-                IconButton(
-                  icon: const Icon(Icons.send, color: Color(0xFFB68645)),
-                  onPressed: () => _sendMessage(_messageController.text),
+                const SizedBox(width: 8),
+                FloatingActionButton(
+                  mini: true,
+                  backgroundColor: primaryColor,
+                  child: const Icon(Icons.send, color: Colors.white),
+                  onPressed: _sendMessage,
                 ),
               ],
             ),
@@ -1354,13 +1982,11 @@ class _ChatScreenState extends State<ChatScreen> {
 }
 
 //---------- profile screen ----------//
-
 class ProfileScreen extends StatefulWidget {
   final String firstName;
   final String lastName;
   final String email;
   final String phone;
-
   const ProfileScreen({
     Key? key,
     required this.firstName,
@@ -1368,7 +1994,6 @@ class ProfileScreen extends StatefulWidget {
     required this.email,
     required this.phone,
   }) : super(key: key);
-
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
 }
@@ -1378,7 +2003,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   late String lastName;
   late String email;
   late String phone;
-
   @override
   void initState() {
     super.initState();
@@ -1391,7 +2015,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     const primaryColor = Color(0xFFB68645);
-
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -1416,7 +2039,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
             ),
             const SizedBox(height: 16),
-
             // الاسم الكامل
             Text(
               "$firstName $lastName",
@@ -1427,14 +2049,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
             ),
             const SizedBox(height: 8),
-
             // البريد الإلكتروني
             Text(
               email,
               style: const TextStyle(fontSize: 16, color: Colors.black54),
             ),
             const SizedBox(height: 4),
-
             // رقم الهاتف
             Text(
               phone,
@@ -1443,7 +2063,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
             const SizedBox(height: 24),
             const Divider(thickness: 1),
             const SizedBox(height: 12),
-
             // إعدادات الحساب
             _buildSettingTile(
               Icons.edit,
@@ -1539,7 +2158,6 @@ class EditProfileScreen extends StatefulWidget {
   final String lastName;
   final String email;
   final String phone;
-
   const EditProfileScreen({
     Key? key,
     required this.firstName,
@@ -1547,7 +2165,6 @@ class EditProfileScreen extends StatefulWidget {
     required this.email,
     required this.phone,
   }) : super(key: key);
-
   @override
   State<EditProfileScreen> createState() => _EditProfileScreenState();
 }
@@ -1557,7 +2174,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   late TextEditingController lastNameController;
   late TextEditingController emailController;
   late TextEditingController phoneController;
-
   @override
   void initState() {
     super.initState();
@@ -1579,7 +2195,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   @override
   Widget build(BuildContext context) {
     const primaryColor = Color(0xFFB68645);
-
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -1673,7 +2288,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 // ====================== Change Password Screen ======================
 class ChangePasswordScreen extends StatefulWidget {
   const ChangePasswordScreen({Key? key}) : super(key: key);
-
   @override
   State<ChangePasswordScreen> createState() => _ChangePasswordScreenState();
 }
@@ -1682,13 +2296,10 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
   bool _obscureCurrent = true;
   bool _obscureNew = true;
   bool _obscureConfirm = true;
-
   final TextEditingController currentController = TextEditingController();
   final TextEditingController newController = TextEditingController();
   final TextEditingController confirmController = TextEditingController();
-
   String? errorMessage;
-
   @override
   void dispose() {
     currentController.dispose();
@@ -1712,11 +2323,9 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
       confirmController.text.isNotEmpty &&
       newController.text.isNotEmpty &&
       confirmController.text == newController.text;
-
   @override
   Widget build(BuildContext context) {
     const primaryColor = Color(0xFFB68645);
-
     return Scaffold(
       appBar: AppBar(
         backgroundColor: primaryColor,
@@ -1780,7 +2389,6 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
               onChanged: (_) =>
                   setState(() {}), // ✅ تحديث الرسالة أثناء الكتابة
             ),
-
             // ✅ الرسالة تحت confirm password
             const SizedBox(height: 6),
             if (confirmController.text.isNotEmpty)
@@ -1794,7 +2402,6 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                   fontWeight: FontWeight.bold,
                 ),
               ),
-
             const SizedBox(height: 12),
             if (!isPasswordValid && newController.text.isNotEmpty)
               const Text(

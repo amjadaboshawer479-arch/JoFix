@@ -5,11 +5,9 @@ import 'admain.dart'; // صفحة الأدمن
 
 class LoginScreen extends StatelessWidget {
   const LoginScreen({super.key});
-
   @override
   Widget build(BuildContext context) {
     const Color brown = Color(0xFFB68645);
-
     return Scaffold(
       appBar: AppBar(
         title: const Text("Login Page", style: TextStyle(color: Colors.white)),
@@ -54,7 +52,6 @@ class LoginScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 30),
-
                 // زر البروفايدر
                 SizedBox(
                   width: double.infinity,
@@ -74,7 +71,6 @@ class LoginScreen extends StatelessWidget {
                         ),
                       );
                     },
-
                     child: const Text(
                       "Login as a Service Provider",
                       style: TextStyle(
@@ -94,7 +90,6 @@ class LoginScreen extends StatelessWidget {
               ],
             ),
           ),
-
           // زر الأدمن في الزاوية السفلية اليمنى
           // زر الأدمن في الزاوية السفلية اليمنى
           Positioned(
