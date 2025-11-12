@@ -33,6 +33,8 @@ dependencies:
   firebase_core: ^4.2.0
   cloud_firestore: ^6.0.3
   google_sign_in: ^6.3.0
+  url_launcher: ^6.1.10
+  geolocator: ^14.0.2
 
   
   flutter:

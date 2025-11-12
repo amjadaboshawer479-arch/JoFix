@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 //------------------ 2. Phone Number Screen ------------------//
 // ------------------- Client Home Page ------------------- //
@@ -357,6 +358,27 @@ class _ClientHomePageState extends State<ClientHomePage> {
               ),
             ),
             const SizedBox(height: 24),
+            const SizedBox(height: 12),
+            Center(
+              child: TextButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const ForgotPasswordScreen(),
+                    ),
+                  );
+                },
+                child: const Text(
+                  "Forgot Password?",
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Color(0xFFB68645),
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
 
             // Divider with OR
             Row(
@@ -441,6 +463,111 @@ class _ClientHomePageState extends State<ClientHomePage> {
   }
 }
 
+//---------FORGET PASSWORD--------//
+class ForgotPasswordScreen extends StatefulWidget {
+  const ForgotPasswordScreen({super.key});
+
+  @override
+  State<ForgotPasswordScreen> createState() => _ForgotPasswordScreenState();
+}
+
+class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
+  final emailController = TextEditingController();
+  bool isLoading = false;
+
+  Future<void> _resetPassword() async {
+    final email = emailController.text.trim();
+
+    if (email.isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Please enter your email.")));
+      return;
+    }
+
+    setState(() => isLoading = true);
+
+    try {
+      await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Password reset link sent! Check your email."),
+        ),
+      );
+
+      Navigator.pop(context);
+    } on FirebaseAuthException catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.message ?? "Error sending reset email")),
+      );
+    } finally {
+      setState(() => isLoading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    const primaryColor = Color(0xFFB68645);
+
+    return Scaffold(
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        title: const Text(
+          "Forgot Password",
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
+        backgroundColor: primaryColor,
+        centerTitle: true,
+        elevation: 0,
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Text(
+              "Enter your email and we'll send you a link to reset your password.",
+              style: TextStyle(fontSize: 16, color: Colors.black87),
+            ),
+            const SizedBox(height: 24),
+            TextField(
+              controller: emailController,
+              keyboardType: TextInputType.emailAddress,
+              decoration: InputDecoration(
+                labelText: "Email",
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: const BorderSide(color: primaryColor),
+                ),
+                focusedBorder: const OutlineInputBorder(
+                  borderSide: BorderSide(color: primaryColor, width: 2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton(
+              onPressed: isLoading ? null : _resetPassword,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: primaryColor,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: isLoading
+                  ? const CircularProgressIndicator(color: Colors.white)
+                  : const Text(
+                      "Send Reset Link",
+                      style: TextStyle(fontSize: 16, color: Colors.white),
+                    ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 //------------------ 3. SignUp Screen ------------------//
 // الصفحة الرابعة التي ستستقبل الأسماء
 // شاشة تسجيل العميل
@@ -456,7 +583,6 @@ class _SignupScreenState extends State<SignupScreen> {
   final TextEditingController phoneController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passController = TextEditingController();
-
   // رسائل الخطأ
   String? firstNameError;
   String? lastNameError;
@@ -464,7 +590,6 @@ class _SignupScreenState extends State<SignupScreen> {
   String? emailError;
   String? passError;
   bool _obscurePassword = true;
-
   // ===== شروط التحقق =====
   bool get isFirstValid => firstNameController.text.trim().isNotEmpty;
   bool get isLastValid => lastNameController.text.trim().isNotEmpty;
@@ -1023,14 +1148,7 @@ class _ActivityHomeScreenState extends State<ActivityHomeScreen> {
             // Profile
             Navigator.push(
               context,
-              MaterialPageRoute(
-                builder: (context) => ProfileScreen(
-                  firstName: widget.firstName,
-                  lastName: widget.lastName,
-                  email: "user@example.com", // إذا عندك البريد، استبدله هنا
-                  phone: "+9627XXXXXXX", // إذا عندك رقم الهاتف، استبدله هنا
-                ),
-              ),
+              MaterialPageRoute(builder: (context) => ProfileScreen()),
             );
           }
         },
@@ -1295,42 +1413,14 @@ class _HouseCleaningPageState extends State<HouseCleaningPage> {
 //------- اذا كبس على hose cleaning من جوا ---//
 class HouseCleaningProsPage extends StatelessWidget {
   const HouseCleaningProsPage({Key? key}) : super(key: key);
+
   @override
   Widget build(BuildContext context) {
-    // بيانات مؤقتة
-    final cleaners = [
-      {
-        "name": "Tarek A. Shaker",
-        "rating": 5.0,
-        "reviews": 6,
-        "desc":
-            "“Tarek was amazing. House looked spotless and smell so refreshing. Totally worth the price.”",
-        "image": "assets/cleaner1.jpg",
-      },
-      {
-        "name": "Amjad Abo Shawar",
-        "rating": 4.2,
-        "reviews": 12,
-        "desc":
-            "“Mohamad is thorough and great with organizing. Would definitely hire again!”",
-        "image": "assets/cleaner2.jpg",
-      },
-      {
-        "name": "Sami G. Garann",
-        "rating": 4.9,
-        "reviews": 35,
-        "desc":
-            "“Sami is fast, reliable, and friendly. Left my place shining!”",
-        "image": "assets/cleaner3.jpg",
-      },
-      {
-        "name": "Nour A. Falah",
-        "rating": 4.7,
-        "reviews": 18,
-        "desc": "“Nour pays attention to every detail. Highly recommended.”",
-        "image": "assets/cleaner4.jpg",
-      },
-    ];
+    // جلب بيانات السيرفس بروفايدر من فايربيس
+    final providersStream = FirebaseFirestore.instance
+        .collection('service_providers')
+        .snapshots();
+
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.white,
@@ -1343,10 +1433,10 @@ class HouseCleaningProsPage extends StatelessWidget {
           children: [
             const Icon(Icons.search, color: Colors.black54),
             const SizedBox(width: 8),
-            Expanded(
+            const Expanded(
               child: TextField(
-                decoration: const InputDecoration(
-                  hintText: "House Cleaning . Zarqa",
+                decoration: InputDecoration(
+                  hintText: "House Cleaning • Zarqa",
                   border: InputBorder.none,
                 ),
               ),
@@ -1360,99 +1450,129 @@ class HouseCleaningProsPage extends StatelessWidget {
           ),
         ],
       ),
-      body: ListView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: cleaners.length,
-        itemBuilder: (context, index) {
-          final c = cleaners[index];
-          return Card(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            margin: const EdgeInsets.only(bottom: 16),
-            elevation: 3,
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(10),
-                    child: Image.asset(
-                      c["image"]! as String,
-                      width: 70,
-                      height: 70,
-                      fit: BoxFit.cover,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          c["name"]! as String,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
+      body: StreamBuilder<QuerySnapshot>(
+        stream: providersStream,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+            return const Center(child: Text("No providers found"));
+          }
+
+          final providers = snapshot.data!.docs;
+
+          return ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: providers.length,
+            itemBuilder: (context, index) {
+              final data = providers[index].data() as Map<String, dynamic>;
+
+              final name =
+                  "${data['firstName'] ?? ''} ${data['lastName'] ?? ''}";
+              final rating = (data['rating'] ?? 4.5).toDouble();
+              final reviews = data['reviews'] ?? 10;
+              final desc =
+                  data['description'] ??
+                  "Professional service provider with high experience.";
+              final imageUrl =
+                  data['imageUrl'] ??
+                  "https://via.placeholder.com/150"; // صورة افتراضية لو مش موجودة
+
+              return Card(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                margin: const EdgeInsets.only(bottom: 16),
+                elevation: 3,
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(10),
+                        child: Image.network(
+                          imageUrl,
+                          width: 70,
+                          height: 70,
+                          fit: BoxFit.cover,
                         ),
-                        const SizedBox(height: 6),
-                        Row(
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              "Exceptional ${c["rating"]}",
+                              name,
                               style: const TextStyle(
-                                color: Colors.green,
-                                fontWeight: FontWeight.w600,
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
                               ),
                             ),
-                            const SizedBox(width: 4),
-                            Icon(Icons.star, color: Colors.green, size: 16),
+                            const SizedBox(height: 6),
+                            Row(
+                              children: [
+                                Text(
+                                  "Exceptional $rating",
+                                  style: const TextStyle(
+                                    color: Colors.green,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                const SizedBox(width: 4),
+                                const Icon(
+                                  Icons.star,
+                                  color: Colors.green,
+                                  size: 16,
+                                ),
+                                Text(
+                                  " ($reviews)",
+                                  style: const TextStyle(
+                                    color: Colors.green,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 6),
                             Text(
-                              " (${c["reviews"]})",
+                              desc,
                               style: const TextStyle(
-                                color: Colors.green,
                                 fontSize: 13,
+                                color: Colors.black87,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            TextButton(
+                              onPressed: () {
+                                // لما الكلاينت يضغط "Read more"
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => CleanerDetailsPage(
+                                      name: name,
+                                      image: imageUrl,
+                                      locationLink: "",
+                                    ),
+                                  ),
+                                );
+                              },
+                              child: const Text(
+                                "Read more",
+                                style: TextStyle(color: Colors.blue),
                               ),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 6),
-                        Text(
-                          c["desc"]! as String,
-                          style: const TextStyle(
-                            fontSize: 13,
-                            color: Colors.black87,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        TextButton(
-                          onPressed: () {
-                            if (c["name"] == "Tarek A. Shaker") {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => CleanerDetailsPage(
-                                    name: c["name"] as String,
-                                    image: c["image"] as String,
-                                  ),
-                                ),
-                              );
-                            }
-                            // هنا ممكن تفتح صفحة تفاصيل العامل
-                          },
-                          child: const Text(
-                            "Read more",
-                            style: TextStyle(color: Colors.blue),
-                          ),
-                        ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-            ),
+                ),
+              );
+            },
           );
         },
       ),
@@ -1461,17 +1581,35 @@ class HouseCleaningProsPage extends StatelessWidget {
 }
 
 //-------في حال كبس على read more ------//
+
 class CleanerDetailsPage extends StatelessWidget {
   final String name;
   final String image;
-  const CleanerDetailsPage({Key? key, required this.name, required this.image})
-    : super(key: key);
+  final String locationLink; // الرابط من Firebase
+
+  const CleanerDetailsPage({
+    Key? key,
+    required this.name,
+    required this.image,
+    required this.locationLink,
+  }) : super(key: key);
+
+  // دالة لفتح Google Maps
+  void _openMap(String link) async {
+    final uri = Uri.parse(link);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else {
+      debugPrint("Could not open the map link.");
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey[100],
       appBar: AppBar(
-        title: Text(name, style: TextStyle(color: Colors.white)),
+        title: Text(name, style: const TextStyle(color: Colors.white)),
         backgroundColor: const Color(0xFFB68645),
         centerTitle: true,
       ),
@@ -1484,14 +1622,14 @@ class CleanerDetailsPage extends StatelessWidget {
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                CircleAvatar(radius: 35, backgroundImage: AssetImage(image)),
+                CircleAvatar(radius: 35, backgroundImage: NetworkImage(image)),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        "Tarek A. Shaker",
+                        name,
                         style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
@@ -1504,8 +1642,8 @@ class CleanerDetailsPage extends StatelessWidget {
                       ),
                       const SizedBox(height: 8),
                       Row(
-                        children: const [
-                          Text(
+                        children: [
+                          const Text(
                             "JOD 70 ",
                             style: TextStyle(
                               fontSize: 15,
@@ -1513,7 +1651,7 @@ class CleanerDetailsPage extends StatelessWidget {
                               color: Colors.black87,
                             ),
                           ),
-                          Text(
+                          const Text(
                             "Starting Price",
                             style: TextStyle(
                               fontSize: 13,
@@ -1522,53 +1660,33 @@ class CleanerDetailsPage extends StatelessWidget {
                           ),
                         ],
                       ),
+                      const SizedBox(height: 6),
+                      // زر الموقع
+                      GestureDetector(
+                        onTap: () => _openMap(locationLink),
+                        child: Row(
+                          children: const [
+                            Icon(Icons.location_on, color: Colors.blue),
+                            SizedBox(width: 4),
+                            Text(
+                              "Location",
+                              style: TextStyle(
+                                color: Colors.blue,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ],
                   ),
                 ),
               ],
             ),
+
             const SizedBox(height: 16),
 
-            /// Your project box
-            Card(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(12.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      "Your Project",
-                      style: TextStyle(fontSize: 14, color: Colors.black54),
-                    ),
-                    const SizedBox(height: 4),
-                    const Text(
-                      "House Cleaning · Zarqa 13110",
-                      style: TextStyle(fontSize: 15),
-                    ),
-                    const SizedBox(height: 8),
-                    ElevatedButton(
-                      onPressed: () {},
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFB68645),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                      child: const Text(
-                        "Check Availability",
-                        style: TextStyle(color: Colors.white),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 20),
-
-            /// About This Pro
+            /// باقي الصفحة كما هي...
             const Text(
               "About This Pro",
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
@@ -1579,8 +1697,6 @@ class CleanerDetailsPage extends StatelessWidget {
               style: TextStyle(fontSize: 14, color: Colors.black87),
             ),
             const SizedBox(height: 20),
-
-            /// Overview
             const Text(
               "Overview",
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
@@ -1591,8 +1707,6 @@ class CleanerDetailsPage extends StatelessWidget {
               style: TextStyle(fontSize: 14, color: Colors.black87),
             ),
             const SizedBox(height: 20),
-
-            /// Business hours
             const Text(
               "Business hours",
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
@@ -1603,8 +1717,6 @@ class CleanerDetailsPage extends StatelessWidget {
               style: TextStyle(fontSize: 14, color: Colors.black87),
             ),
             const SizedBox(height: 20),
-
-            /// Payment methods
             const Text(
               "Payment methods",
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
@@ -1613,99 +1725,6 @@ class CleanerDetailsPage extends StatelessWidget {
             const Text(
               "This pro accepts payments via Cash, Zain Cash, and Bank transfer.",
               style: TextStyle(fontSize: 14, color: Colors.black87),
-            ),
-            const SizedBox(height: 20),
-
-            /// Reviews
-            const Text(
-              "Reviews",
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 12),
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: const CircleAvatar(
-                backgroundColor: Colors.grey,
-                child: Icon(Icons.person, color: Colors.white),
-              ),
-              title: const Text(
-                "Salma K. Malek",
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-              ),
-              subtitle: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
-                  Text(
-                    "April 25 - 2025",
-                    style: TextStyle(fontSize: 12, color: Colors.black54),
-                  ),
-                  SizedBox(height: 6),
-                  Text(
-                    "Since my project is still in progress, Tarek has been able to find a cleaner and send a cleaning lady home.",
-                    style: TextStyle(fontSize: 13, color: Colors.black87),
-                  ),
-                  SizedBox(height: 6),
-                  Text(
-                    "Details: 1 bedroom - 2 bathrooms - 1 living room - Window cleaning - House Cleaning",
-                    style: TextStyle(fontSize: 13, color: Colors.black87),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 10),
-            Center(
-              child: OutlinedButton(
-                onPressed: () {},
-                style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: Colors.grey),
-                ),
-                child: const Text("See More Reviews"),
-              ),
-            ),
-            const SizedBox(height: 20),
-
-            /// Bottom price box
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                border: Border.all(color: Colors.grey.shade300),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        "JOD 70",
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      Text(
-                        "Starting Price",
-                        style: TextStyle(fontSize: 13, color: Colors.black54),
-                      ),
-                    ],
-                  ),
-                  ElevatedButton(
-                    onPressed: () {},
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFB68645),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    child: const Text(
-                      "Check Availability",
-                      style: TextStyle(color: Colors.white),
-                    ),
-                  ),
-                ],
-              ),
             ),
           ],
         ),
@@ -1983,38 +2002,61 @@ class _ClientChatScreenState extends State<ClientChatScreen> {
 
 //---------- profile screen ----------//
 class ProfileScreen extends StatefulWidget {
-  final String firstName;
-  final String lastName;
-  final String email;
-  final String phone;
-  const ProfileScreen({
-    Key? key,
-    required this.firstName,
-    required this.lastName,
-    required this.email,
-    required this.phone,
-  }) : super(key: key);
+  const ProfileScreen({Key? key}) : super(key: key);
+
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  late String firstName;
-  late String lastName;
-  late String email;
-  late String phone;
+  String firstName = '';
+  String lastName = '';
+  String email = '';
+  String phone = '';
+  bool isLoading = true;
+
   @override
   void initState() {
     super.initState();
-    firstName = widget.firstName;
-    lastName = widget.lastName;
-    email = widget.email;
-    phone = widget.phone;
+    _loadUserData();
+  }
+
+  // تحميل بيانات المستخدم من Firestore
+  Future<void> _loadUserData() async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        final doc = await FirebaseFirestore.instance
+            .collection('clients') // اسم الكولكشن تبع المستخدمين
+            .doc(user.uid)
+            .get();
+
+        if (doc.exists) {
+          setState(() {
+            firstName = doc['firstName'] ?? '';
+            lastName = doc['lastName'] ?? '';
+            email = doc['email'] ?? user.email ?? '';
+            phone = doc['phone'] ?? '';
+            isLoading = false;
+          });
+        } else {
+          setState(() {
+            isLoading = false;
+          });
+        }
+      }
+    } catch (e) {
+      print('Error loading profile: $e');
+      setState(() {
+        isLoading = false;
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     const primaryColor = Color(0xFFB68645);
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -2026,103 +2068,136 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
         centerTitle: true,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            // صورة الملف الشخصي
-            Center(
-              child: CircleAvatar(
-                radius: 50,
-                backgroundColor: primaryColor,
-                child: const Icon(Icons.person, size: 50, color: Colors.white),
-              ),
-            ),
-            const SizedBox(height: 16),
-            // الاسم الكامل
-            Text(
-              "$firstName $lastName",
-              style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFFB68645),
-              ),
-            ),
-            const SizedBox(height: 8),
-            // البريد الإلكتروني
-            Text(
-              email,
-              style: const TextStyle(fontSize: 16, color: Colors.black54),
-            ),
-            const SizedBox(height: 4),
-            // رقم الهاتف
-            Text(
-              phone,
-              style: const TextStyle(fontSize: 16, color: Colors.black54),
-            ),
-            const SizedBox(height: 24),
-            const Divider(thickness: 1),
-            const SizedBox(height: 12),
-            // إعدادات الحساب
-            _buildSettingTile(
-              Icons.edit,
-              "Edit Profile",
-              primaryColor,
-              () async {
-                final result = await Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => EditProfileScreen(
-                      firstName: firstName,
-                      lastName: lastName,
-                      email: email,
-                      phone: phone,
+      body: isLoading
+          ? const Center(child: CircularProgressIndicator(color: primaryColor))
+          : SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  // صورة الملف الشخصي
+                  Center(
+                    child: CircleAvatar(
+                      radius: 50,
+                      backgroundColor: primaryColor,
+                      child: const Icon(
+                        Icons.person,
+                        size: 50,
+                        color: Colors.white,
+                      ),
                     ),
                   ),
-                );
-                if (result != null) {
-                  setState(() {
-                    firstName = result['firstName'];
-                    lastName = result['lastName'];
-                    email = result['email'];
-                    phone = result['phone'];
-                  });
-                }
-              },
+                  const SizedBox(height: 16),
+
+                  // الاسم الكامل
+                  Text(
+                    "$firstName $lastName",
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFFB68645),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+
+                  // البريد الإلكتروني
+                  Text(
+                    email,
+                    style: const TextStyle(fontSize: 16, color: Colors.black54),
+                  ),
+                  const SizedBox(height: 4),
+
+                  // رقم الهاتف
+                  Text(
+                    phone,
+                    style: const TextStyle(fontSize: 16, color: Colors.black54),
+                  ),
+                  const SizedBox(height: 24),
+
+                  const Divider(thickness: 1),
+                  const SizedBox(height: 12),
+
+                  // زر تعديل الملف الشخصي
+                  _buildSettingTile(
+                    Icons.edit,
+                    "Edit Profile",
+                    primaryColor,
+                    () async {
+                      final result = await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => EditProfileScreen(
+                            firstName: firstName,
+                            lastName: lastName,
+                            email: email,
+                            phone: phone,
+                          ),
+                        ),
+                      );
+                      if (result != null) {
+                        setState(() {
+                          firstName = result['firstName'];
+                          lastName = result['lastName'];
+                          email = result['email'];
+                          phone = result['phone'];
+                        });
+                      }
+                    },
+                  ),
+
+                  // تغيير كلمة المرور
+                  _buildSettingTile(
+                    Icons.lock,
+                    "Change Password",
+                    primaryColor,
+                    () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const ChangePasswordScreen(),
+                        ),
+                      );
+                    },
+                  ),
+
+                  // الإشعارات
+                  _buildSettingTile(
+                    Icons.notifications,
+                    "Notifications",
+                    primaryColor,
+                    () {},
+                  ),
+
+                  // المساعدة والدعم
+                  _buildSettingTile(
+                    Icons.help_outline,
+                    "Help & Support",
+                    primaryColor,
+                    () {},
+                  ),
+
+                  // تسجيل الخروج
+                  _buildSettingTile(
+                    Icons.logout,
+                    "Logout",
+                    primaryColor,
+                    () async {
+                      await FirebaseAuth.instance.signOut();
+                      Navigator.pushAndRemoveUntil(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const LoginScreen(),
+                        ),
+                        (route) => false,
+                      );
+                    },
+                  ),
+                ],
+              ),
             ),
-            _buildSettingTile(Icons.lock, "Change Password", primaryColor, () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const ChangePasswordScreen(),
-                ),
-              );
-            }),
-            _buildSettingTile(
-              Icons.notifications,
-              "Notifications",
-              primaryColor,
-              () {},
-            ),
-            _buildSettingTile(
-              Icons.help_outline,
-              "Help & Support",
-              primaryColor,
-              () {},
-            ),
-            _buildSettingTile(Icons.logout, "Logout", primaryColor, () {
-              Navigator.pushAndRemoveUntil(
-                context,
-                MaterialPageRoute(builder: (context) => const LoginScreen()),
-                (route) => false, // يمسح كل الصفحات السابقة
-              );
-            }),
-          ],
-        ),
-      ),
     );
   }
 
+  // عنصر إعداد (Tile)
   Widget _buildSettingTile(
     IconData icon,
     String title,
@@ -2153,11 +2228,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
 }
 
 // ====================== Edit Profile Screen ======================
+
 class EditProfileScreen extends StatefulWidget {
   final String firstName;
   final String lastName;
   final String email;
   final String phone;
+
   const EditProfileScreen({
     Key? key,
     required this.firstName,
@@ -2165,6 +2242,7 @@ class EditProfileScreen extends StatefulWidget {
     required this.email,
     required this.phone,
   }) : super(key: key);
+
   @override
   State<EditProfileScreen> createState() => _EditProfileScreenState();
 }
@@ -2174,6 +2252,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   late TextEditingController lastNameController;
   late TextEditingController emailController;
   late TextEditingController phoneController;
+
+  bool isLoading = false;
+
   @override
   void initState() {
     super.initState();
@@ -2190,6 +2271,36 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     emailController.dispose();
     phoneController.dispose();
     super.dispose();
+  }
+
+  Future<void> _updateUserData() async {
+    try {
+      setState(() => isLoading = true);
+
+      final uid = FirebaseAuth.instance.currentUser?.uid;
+      if (uid == null) {
+        throw Exception("User not logged in");
+      }
+
+      await FirebaseFirestore.instance.collection('clients').doc(uid).update({
+        'firstName': firstNameController.text.trim(),
+        'lastName': lastNameController.text.trim(),
+        'email': emailController.text.trim(),
+        'phone': phoneController.text.trim(),
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Profile updated successfully")),
+      );
+
+      Navigator.pop(context); // يرجع للشاشة السابقة بعد التحديث
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Error updating profile: $e")));
+    } finally {
+      setState(() => isLoading = false);
+    }
   }
 
   @override
@@ -2212,45 +2323,33 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           children: [
             TextField(
               controller: firstNameController,
-              decoration: InputDecoration(
+              decoration: const InputDecoration(
                 labelText: "First Name",
-                border: const OutlineInputBorder(),
-                focusedBorder: OutlineInputBorder(
-                  borderSide: BorderSide(color: primaryColor),
-                ),
+                border: OutlineInputBorder(),
               ),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: lastNameController,
-              decoration: InputDecoration(
+              decoration: const InputDecoration(
                 labelText: "Last Name",
-                border: const OutlineInputBorder(),
-                focusedBorder: OutlineInputBorder(
-                  borderSide: BorderSide(color: primaryColor),
-                ),
+                border: OutlineInputBorder(),
               ),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: emailController,
-              decoration: InputDecoration(
+              decoration: const InputDecoration(
                 labelText: "Email",
-                border: const OutlineInputBorder(),
-                focusedBorder: OutlineInputBorder(
-                  borderSide: BorderSide(color: primaryColor),
-                ),
+                border: OutlineInputBorder(),
               ),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: phoneController,
-              decoration: InputDecoration(
+              decoration: const InputDecoration(
                 labelText: "Phone",
-                border: const OutlineInputBorder(),
-                focusedBorder: OutlineInputBorder(
-                  borderSide: BorderSide(color: primaryColor),
-                ),
+                border: OutlineInputBorder(),
               ),
             ),
             const SizedBox(height: 24),
@@ -2264,18 +2363,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     borderRadius: BorderRadius.circular(8),
                   ),
                 ),
-                onPressed: () {
-                  Navigator.pop(context, {
-                    'firstName': firstNameController.text,
-                    'lastName': lastNameController.text,
-                    'email': emailController.text,
-                    'phone': phoneController.text,
-                  });
-                },
-                child: const Text(
-                  "Save",
-                  style: TextStyle(fontSize: 16, color: Colors.white),
-                ),
+                onPressed: isLoading ? null : _updateUserData,
+                child: isLoading
+                    ? const CircularProgressIndicator(color: Colors.white)
+                    : const Text(
+                        "Save",
+                        style: TextStyle(fontSize: 16, color: Colors.white),
+                      ),
               ),
             ),
           ],

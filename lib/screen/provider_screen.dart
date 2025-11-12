@@ -18,6 +18,7 @@ class _ServiseProviderLoginState extends State<ServiseProviderLogin> {
   bool isEmailValid = false;
   bool isPasswordValid = false;
   bool isPasswordVisible = false;
+
   // --- Validators ---
   String? _validatePhone(String value) {
     if (value.isEmpty) return "Phone number is required";
@@ -71,11 +72,65 @@ class _ServiseProviderLoginState extends State<ServiseProviderLogin> {
     super.dispose();
   }
 
+  Future<void> _resetPassword() async {
+    final emailResetController = TextEditingController();
+
+    await showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text("Reset Password"),
+          content: TextField(
+            controller: emailResetController,
+            keyboardType: TextInputType.emailAddress,
+            decoration: const InputDecoration(hintText: "Enter your email"),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Cancel"),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                final email = emailResetController.text.trim();
+                if (email.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text("Please enter your email")),
+                  );
+                  return;
+                }
+
+                try {
+                  await FirebaseAuth.instance.sendPasswordResetEmail(
+                    email: email,
+                  );
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text("Password reset link sent!")),
+                  );
+                } on FirebaseAuthException catch (e) {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(e.message ?? "Error sending reset link"),
+                    ),
+                  );
+                }
+              },
+              child: const Text("Send"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     const Color borderColor = Color(0xFFB68645);
     const Color buttonColor = Color(0xFFB68645);
     bool allValid = isPhoneValid && isEmailValid && isPasswordValid;
+
     InputDecoration customInput(String hint) {
       return InputDecoration(
         hintText: hint,
@@ -154,86 +209,98 @@ class _ServiseProviderLoginState extends State<ServiseProviderLogin> {
               style: TextStyle(color: borderColor, fontSize: 12),
             ),
             const SizedBox(height: 32),
-            // ===== Continue Button =====
+            // ===== Login Button =====
             SizedBox(
               width: double.infinity,
               height: 48,
-              child: Builder(
-                builder: (context) {
-                  return ElevatedButton(
-                    onPressed: () async {
-                      showDialog(
-                        context: context,
-                        barrierDismissible: false,
-                        builder: (_) =>
-                            const Center(child: CircularProgressIndicator()),
-                      );
-
-                      try {
-                        final auth = FirebaseAuth.instance;
-                        final cred = await auth.signInWithEmailAndPassword(
-                          email: emailController.text.trim(),
-                          password: passwordController.text,
-                        );
-
-                        final uid = cred.user?.uid;
-                        if (uid == null) throw Exception("User ID not found");
-
-                        final firestore = FirebaseFirestore.instance;
-                        final doc = await firestore
-                            .collection('service_providers')
-                            .doc(uid)
-                            .get();
-
-                        Navigator.pop(context); // close loading
-
-                        if (!doc.exists) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text("Profile not found.")),
-                          );
-                          return;
-                        }
-
-                        final data = doc.data()!;
-                        Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => ServiceProviderHome(
-                              firstName: data['firstName'] ?? '',
-                              lastName: data['lastName'] ?? '',
-                              email: data['email'] ?? '',
-                              phone: data['phone'] ?? '',
-                            ),
-                          ),
-                        );
-                      } on FirebaseAuthException catch (e) {
-                        Navigator.pop(context);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text(e.message ?? "Login failed")),
-                        );
-                      }
-                    },
-
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: allValid ? buttonColor : Colors.grey,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                    ),
-                    child: const Text(
-                      "Login",
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+              child: ElevatedButton(
+                onPressed: () async {
+                  showDialog(
+                    context: context,
+                    barrierDismissible: false,
+                    builder: (_) =>
+                        const Center(child: CircularProgressIndicator()),
                   );
+
+                  try {
+                    final auth = FirebaseAuth.instance;
+                    final cred = await auth.signInWithEmailAndPassword(
+                      email: emailController.text.trim(),
+                      password: passwordController.text,
+                    );
+
+                    final uid = cred.user?.uid;
+                    if (uid == null) throw Exception("User ID not found");
+
+                    final firestore = FirebaseFirestore.instance;
+                    final doc = await firestore
+                        .collection('service_providers')
+                        .doc(uid)
+                        .get();
+
+                    Navigator.pop(context); // close loading
+
+                    if (!doc.exists) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text("Profile not found.")),
+                      );
+                      return;
+                    }
+
+                    final data = doc.data()!;
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ServiceProviderHome(
+                          firstName: data['firstName'] ?? '',
+                          lastName: data['lastName'] ?? '',
+                          email: data['email'] ?? '',
+                          phone: data['phone'] ?? '',
+                        ),
+                      ),
+                    );
+                  } on FirebaseAuthException catch (e) {
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text(e.message ?? "Login failed")),
+                    );
+                  }
                 },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: allValid ? buttonColor : Colors.grey,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                ),
+                child: const Text(
+                  "Login",
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ),
             ),
-            const SizedBox(height: 16),
-            // ===== Small Sign Up Button =====
+            const SizedBox(height: 12),
+
+            // ===== Forgot Password =====
+            Center(
+              child: TextButton(
+                onPressed: _resetPassword,
+                child: const Text(
+                  "Forgot Password?",
+                  style: TextStyle(
+                    color: buttonColor,
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+
+            // ===== Sign Up =====
             Center(
               child: TextButton(
                 onPressed: () {
@@ -242,9 +309,6 @@ class _ServiseProviderLoginState extends State<ServiseProviderLogin> {
                     MaterialPageRoute(
                       builder: (context) => const SignupScreen(),
                     ),
-                  );
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text("Sign Up clicked")),
                   );
                 },
                 child: const Text(
@@ -267,6 +331,7 @@ class _ServiseProviderLoginState extends State<ServiseProviderLogin> {
 //----------signe up secreen---------//
 class SignupScreen extends StatefulWidget {
   const SignupScreen({Key? key}) : super(key: key);
+
   @override
   State<SignupScreen> createState() => _SignupScreenState();
 }
@@ -277,14 +342,17 @@ class _SignupScreenState extends State<SignupScreen> {
   final TextEditingController phoneController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passController = TextEditingController();
-  // رسائل الخطأ
+  final TextEditingController mapLinkController = TextEditingController();
+
   String? firstNameError;
   String? lastNameError;
   String? phoneError;
   String? emailError;
   String? passError;
+  String? mapLinkError;
+
   bool _obscurePassword = true;
-  // ===== شروط التحقق =====
+
   bool get isFirstValid => firstNameController.text.trim().isNotEmpty;
   bool get isLastValid => lastNameController.text.trim().isNotEmpty;
   bool get isPhoneValid {
@@ -308,27 +376,42 @@ class _SignupScreenState extends State<SignupScreen> {
     return lengthOK && numberOK && upperOK && lowerOK && specialOK;
   }
 
-  // ===== Validation functions =====
-  void validateFirst() {
-    setState(() => firstNameError = isFirstValid ? null : 'Required');
-  }
+  bool get isMapLinkValid => _isValidMapLink(mapLinkController.text.trim());
 
-  void validateLast() {
-    setState(() => lastNameError = isLastValid ? null : 'Required');
-  }
+  void validateFirst() =>
+      setState(() => firstNameError = isFirstValid ? null : 'Required');
 
-  void validatePhone() {
-    setState(
-      () => phoneError = isPhoneValid ? null : 'Not valid Jordanian number',
-    );
-  }
+  void validateLast() =>
+      setState(() => lastNameError = isLastValid ? null : 'Required');
 
-  void validateEmail() {
-    setState(() => emailError = isEmailValid ? null : 'Not valid email');
-  }
+  void validatePhone() => setState(
+    () => phoneError = isPhoneValid ? null : 'Not valid Jordanian number',
+  );
 
-  void validatePass() {
-    setState(() => passError = isPassValid ? null : 'Password not valid');
+  void validateEmail() =>
+      setState(() => emailError = isEmailValid ? null : 'Not valid email');
+
+  void validatePass() =>
+      setState(() => passError = isPassValid ? null : 'Password not valid');
+
+  void validateMapLink() => setState(
+    () => mapLinkError = isMapLinkValid ? null : 'Invalid Google Maps link',
+  );
+
+  bool _isValidMapLink(String link) {
+    if (link.isEmpty) return false;
+    Uri? uri = Uri.tryParse(link);
+    if (uri == null || !uri.hasAbsolutePath) return false;
+
+    final host = uri.host.toLowerCase();
+
+    final isGoogleMaps =
+        host.contains('google.com') ||
+        host.contains('maps.app.goo.gl') ||
+        host.contains('goo.gl') ||
+        host.contains('google.co');
+
+    return isGoogleMaps;
   }
 
   @override
@@ -338,6 +421,7 @@ class _SignupScreenState extends State<SignupScreen> {
     phoneController.dispose();
     emailController.dispose();
     passController.dispose();
+    mapLinkController.dispose();
     super.dispose();
   }
 
@@ -348,7 +432,9 @@ class _SignupScreenState extends State<SignupScreen> {
         isLastValid &&
         isPhoneValid &&
         isEmailValid &&
-        isPassValid;
+        isPassValid &&
+        isMapLinkValid;
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -370,6 +456,7 @@ class _SignupScreenState extends State<SignupScreen> {
               style: TextStyle(fontSize: 16, color: Color(0xFFB68645)),
             ),
             const SizedBox(height: 24),
+
             // First Name
             TextField(
               controller: firstNameController,
@@ -381,6 +468,7 @@ class _SignupScreenState extends State<SignupScreen> {
               onChanged: (_) => validateFirst(),
             ),
             const SizedBox(height: 16),
+
             // Last Name
             TextField(
               controller: lastNameController,
@@ -392,6 +480,7 @@ class _SignupScreenState extends State<SignupScreen> {
               onChanged: (_) => validateLast(),
             ),
             const SizedBox(height: 16),
+
             // Phone Number
             TextField(
               controller: phoneController,
@@ -404,13 +493,14 @@ class _SignupScreenState extends State<SignupScreen> {
               onChanged: (_) => validatePhone(),
             ),
             const SizedBox(height: 12),
-            // ملاحظة تظهر فقط إذا الرقم مش صحيح
+
             if (!isPhoneValid && phoneController.text.isNotEmpty)
               const Text(
                 "Phone number must start with +962",
                 style: TextStyle(fontSize: 13, color: Color(0xFFB68645)),
               ),
             const SizedBox(height: 16),
+
             // Email
             TextField(
               controller: emailController,
@@ -423,6 +513,7 @@ class _SignupScreenState extends State<SignupScreen> {
               onChanged: (_) => validateEmail(),
             ),
             const SizedBox(height: 16),
+
             // Password
             TextField(
               controller: passController,
@@ -445,6 +536,7 @@ class _SignupScreenState extends State<SignupScreen> {
               onChanged: (_) => validatePass(),
             ),
             const SizedBox(height: 12),
+
             const Text(
               "Password must contain:\n"
               "• At least 8 characters\n"
@@ -454,70 +546,163 @@ class _SignupScreenState extends State<SignupScreen> {
               "• One special character (!@#\$&*~)",
               style: TextStyle(fontSize: 13, color: Color(0xFFB68645)),
             ),
+            const SizedBox(height: 16),
+
+            // Map Link
+            TextField(
+              controller: mapLinkController,
+              keyboardType: TextInputType.url,
+              decoration: InputDecoration(
+                labelText: "Google Maps Link",
+                hintText: "Paste your Google Maps location link here",
+                border: const OutlineInputBorder(),
+                errorText: mapLinkError,
+                prefixIcon: const Icon(Icons.map, color: Color(0xFFB68645)),
+              ),
+              onChanged: (_) => validateMapLink(),
+            ),
+            const SizedBox(height: 12),
+            if (!isMapLinkValid && mapLinkController.text.isNotEmpty)
+              const Text(
+                "Example: https://maps.app.goo.gl/abc123 or https://www.google.com/maps/...",
+                style: TextStyle(fontSize: 13, color: Color(0xFFB68645)),
+              ),
+
             const SizedBox(height: 32),
-            // Next Button
+
+            // Sign Up Button
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: allValid ? Color(0xFFB68645) : Colors.grey,
+                  backgroundColor: allValid
+                      ? const Color(0xFFB68645)
+                      : Colors.grey,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
                 ),
-                onPressed: () async {
-                  showDialog(
-                    context: context,
-                    barrierDismissible: false,
-                    builder: (_) =>
-                        const Center(child: CircularProgressIndicator()),
-                  );
+                onPressed: allValid
+                    ? () async {
+                        showDialog(
+                          context: context,
+                          barrierDismissible: false,
+                          builder: (_) =>
+                              const Center(child: CircularProgressIndicator()),
+                        );
 
-                  try {
-                    final auth = FirebaseAuth.instance;
-                    final cred = await auth.createUserWithEmailAndPassword(
-                      email: emailController.text.trim(),
-                      password: passController.text,
-                    );
+                        try {
+                          final auth = FirebaseAuth.instance;
+                          final cred = await auth
+                              .createUserWithEmailAndPassword(
+                                email: emailController.text.trim(),
+                                password: passController.text,
+                              );
 
-                    final uid = cred.user?.uid;
-                    if (uid == null) throw Exception("User ID not found");
+                          final user = cred.user;
+                          if (user == null)
+                            throw Exception("User creation failed");
 
-                    final firestore = FirebaseFirestore.instance;
-                    await firestore
-                        .collection('service_providers')
-                        .doc(uid)
-                        .set({
-                          'firstName': firstNameController.text.trim(),
-                          'lastName': lastNameController.text.trim(),
-                          'phone': phoneController.text.trim(),
-                          'email': emailController.text.trim(),
-                          'createdAt': FieldValue.serverTimestamp(),
-                        });
+                          // 🔹 إرسال رابط التحقق
+                          await user
+                              .reload(); // تأكد من أن المستخدم تم تحميله بالكامل
+                          await Future.delayed(
+                            const Duration(seconds: 1),
+                          ); // تأخير بسيط
+                          await user.sendEmailVerification();
 
-                    Navigator.pop(context); // close loading
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text("Account created!")),
-                    );
+                          Navigator.pop(context); // إغلاق الـ loader
 
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => ServiceProviderHome(
-                          firstName: firstNameController.text.trim(),
-                          lastName: lastNameController.text.trim(),
-                        ),
-                      ),
-                    );
-                  } on FirebaseAuthException catch (e) {
-                    Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(e.message ?? "Error")),
-                    );
-                  }
-                },
+                          // 🔹 عرض Dialog للتحقق من البريد
+                          showDialog(
+                            context: context,
+                            barrierDismissible: false,
+                            builder: (context) => AlertDialog(
+                              title: const Text("Verify Your Email"),
+                              content: const Text(
+                                "A verification link has been sent to your email. "
+                                "Please verify it, then click Continue.",
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () async {
+                                    await user.reload(); // تحديث حالة المستخدم
+                                    if (auth.currentUser!.emailVerified) {
+                                      // ✅ بعد التحقق نضيف المستخدم في Firestore
+                                      final firestore =
+                                          FirebaseFirestore.instance;
+                                      await firestore
+                                          .collection('service_providers')
+                                          .doc(user.uid)
+                                          .set({
+                                            'firstName': firstNameController
+                                                .text
+                                                .trim(),
+                                            'lastName': lastNameController.text
+                                                .trim(),
+                                            'phone': phoneController.text
+                                                .trim(),
+                                            'email': emailController.text
+                                                .trim(),
+                                            'mapLink': mapLinkController.text
+                                                .trim(),
+                                            'createdAt':
+                                                FieldValue.serverTimestamp(),
+                                          });
 
+                                      Navigator.pop(
+                                        context,
+                                      ); // إغلاق الـ dialog
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        const SnackBar(
+                                          content: Text(
+                                            "Account verified and created!",
+                                          ),
+                                        ),
+                                      );
+
+                                      Navigator.pushReplacement(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) =>
+                                              ServiceProviderHome(
+                                                firstName: firstNameController
+                                                    .text
+                                                    .trim(),
+                                                lastName: lastNameController
+                                                    .text
+                                                    .trim(),
+                                              ),
+                                        ),
+                                      );
+                                    } else {
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        const SnackBar(
+                                          content: Text(
+                                            "Please verify your email first",
+                                          ),
+                                        ),
+                                      );
+                                    }
+                                  },
+                                  child: const Text("Continue"),
+                                ),
+                              ],
+                            ),
+                          );
+                        } on FirebaseAuthException catch (e) {
+                          Navigator.pop(context);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text(e.message ?? "Error")),
+                          );
+                        }
+                      }
+                    : null,
                 child: const Text(
                   "Sign Up",
                   style: TextStyle(fontSize: 16, color: Colors.white),
