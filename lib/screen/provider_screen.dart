@@ -3,7 +3,13 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-//----------اlogin service provider----------//
+import 'package:amjad/screen/login_screen.dart'; // Assuming this imports ServiceProviderHome now
+import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+
+
+//----------a login service provider----------//
 class ServiseProviderLogin extends StatefulWidget {
   const ServiseProviderLogin({super.key});
   @override
@@ -19,7 +25,7 @@ class _ServiseProviderLoginState extends State<ServiseProviderLogin> {
   bool isPasswordValid = false;
   bool isPasswordVisible = false;
 
-  // --- Validators ---
+  // --- Validators --- (Backend logic remains untouched)
   String? _validatePhone(String value) {
     if (value.isEmpty) return "Phone number is required";
     if (!value.startsWith("+962")) return "Must start with +962";
@@ -71,7 +77,9 @@ class _ServiseProviderLoginState extends State<ServiseProviderLogin> {
     passwordController.dispose();
     super.dispose();
   }
+  // --- END Validators ---
 
+  // --- Reset Password Logic (Backend logic remains untouched) ---
   Future<void> _resetPassword() async {
     final emailResetController = TextEditingController();
 
@@ -124,71 +132,121 @@ class _ServiseProviderLoginState extends State<ServiseProviderLogin> {
       },
     );
   }
+  // --- END Reset Password Logic ---
 
   @override
   Widget build(BuildContext context) {
-    const Color borderColor = Color(0xFFB68645);
-    const Color buttonColor = Color(0xFFB68645);
+    const Color primaryColor = Color(0xFF00457C);
     bool allValid = isPhoneValid && isEmailValid && isPasswordValid;
 
-    InputDecoration customInput(String hint) {
+    // 🎨 Modern Input Decoration
+    InputDecoration customInput(String hint, IconData icon) {
       return InputDecoration(
         hintText: hint,
+        hintStyle: const TextStyle(color: Colors.grey),
+        prefixIcon: Icon(icon, color: primaryColor.withOpacity(0.7)),
         enabledBorder: OutlineInputBorder(
-          borderSide: const BorderSide(color: borderColor),
-          borderRadius: BorderRadius.circular(6),
+          borderSide: const BorderSide(color: primaryColor, width: 1.0),
+          borderRadius: BorderRadius.circular(12),
         ),
         focusedBorder: OutlineInputBorder(
-          borderSide: const BorderSide(color: borderColor, width: 1.5),
-          borderRadius: BorderRadius.circular(6),
+          borderSide: const BorderSide(color: primaryColor, width: 2.0),
+          borderRadius: BorderRadius.circular(12),
         ),
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 12,
-          vertical: 14,
-        ),
+        contentPadding:
+        const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+        filled: true,
+        fillColor: primaryColor.withOpacity(0.05),
       );
     }
 
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(backgroundColor: Colors.white, elevation: 0),
+      appBar: AppBar( // 🚀 تم تفعيل الـ AppBar
+        backgroundColor: Colors.white,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios, color: primaryColor), // 👈 زر الرجوع
+          onPressed: () {
+            Navigator.pop(context); // للرجوع للشاشة السابقة (ClientHomePage)
+          },
+        ),
+        title: const Text(
+          'Service Provider Login',
+          style: TextStyle(color: primaryColor, fontWeight: FontWeight.bold),
+        ),
+        centerTitle: true,
+      ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(32),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              "Enter Your Details",
-              style: TextStyle(
-                fontSize: 20,
-                color: borderColor,
-                fontWeight: FontWeight.bold,
+            // 🖼️ Logo Placeholder (Replace with your actual image)
+            Center(
+              child: Container(
+                margin: const EdgeInsets.only(top: 20, bottom: 40),
+                height: 100,
+                width: 100,
+                decoration: BoxDecoration(
+                  color: primaryColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: primaryColor.withOpacity(0.1),
+                      blurRadius: 10,
+                      offset: const Offset(0, 5),
+                    ),
+                  ],
+                ),
+                child:
+                const Icon(Icons.person_pin, size: 50, color: primaryColor),
               ),
             ),
-            const SizedBox(height: 16),
+            // 🖋️ Title
+            const Text(
+              "Welcome Back!",
+              style: TextStyle(
+                fontSize: 30,
+                color: primaryColor,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+            const Text(
+              "Sign in to your Service Provider account.",
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.grey,
+                fontWeight: FontWeight.w400,
+              ),
+            ),
+            const SizedBox(height: 40),
+
             // ===== Phone =====
             TextField(
               controller: phoneController,
               keyboardType: TextInputType.phone,
-              decoration: customInput("Phone e.g. +9627XXXXXXXX"),
+              decoration: customInput("Phone e.g. +9627XXXXXXXX", Icons.phone),
             ),
             const SizedBox(height: 16),
             // ===== Email =====
             TextField(
               controller: emailController,
               keyboardType: TextInputType.emailAddress,
-              decoration: customInput("Email"),
+              decoration: customInput("Email", Icons.email),
             ),
             const SizedBox(height: 16),
             // ===== Password =====
             TextField(
               controller: passwordController,
               obscureText: !isPasswordVisible,
-              decoration: customInput("Password").copyWith(
+              decoration: customInput("Password", Icons.lock).copyWith(
                 suffixIcon: IconButton(
                   icon: Icon(
-                    isPasswordVisible ? Icons.visibility : Icons.visibility_off,
-                    color: borderColor,
+                    isPasswordVisible
+                        ? Icons.visibility
+                        : Icons.visibility_off,
+                    color: primaryColor,
                   ),
                   onPressed: () {
                     setState(() {
@@ -198,28 +256,21 @@ class _ServiseProviderLoginState extends State<ServiseProviderLogin> {
                 ),
               ),
             ),
-            const SizedBox(height: 8),
-            const Text(
-              "Password must include:\n"
-              "- At least 8 characters\n"
-              "- Uppercase letter (A-Z)\n"
-              "- Lowercase letter (a-z)\n"
-              "- Number (0-9)\n"
-              "- Special character (!@#\$%^&*)",
-              style: TextStyle(color: borderColor, fontSize: 12),
-            ),
-            const SizedBox(height: 32),
+            const SizedBox(height: 50),
+
             // ===== Login Button =====
             SizedBox(
               width: double.infinity,
-              height: 48,
+              height: 55,
               child: ElevatedButton(
-                onPressed: () async {
+                // Backend logic remains untouched
+                onPressed: allValid
+                    ? () async {
                   showDialog(
                     context: context,
                     barrierDismissible: false,
                     builder: (_) =>
-                        const Center(child: CircularProgressIndicator()),
+                    const Center(child: CircularProgressIndicator(color: primaryColor)),
                   );
 
                   try {
@@ -230,7 +281,8 @@ class _ServiseProviderLoginState extends State<ServiseProviderLogin> {
                     );
 
                     final uid = cred.user?.uid;
-                    if (uid == null) throw Exception("User ID not found");
+                    if (uid == null)
+                      throw Exception("User ID not found");
 
                     final firestore = FirebaseFirestore.instance;
                     final doc = await firestore
@@ -242,7 +294,8 @@ class _ServiseProviderLoginState extends State<ServiseProviderLogin> {
 
                     if (!doc.exists) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text("Profile not found.")),
+                        const SnackBar(
+                            content: Text("Profile not found.")),
                       );
                       return;
                     }
@@ -251,7 +304,7 @@ class _ServiseProviderLoginState extends State<ServiseProviderLogin> {
                     Navigator.pushReplacement(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => ServiceProviderHome(
+                        builder: (context) => ServiceProviderHome1(
                           firstName: data['firstName'] ?? '',
                           lastName: data['lastName'] ?? '',
                           email: data['email'] ?? '',
@@ -262,63 +315,88 @@ class _ServiseProviderLoginState extends State<ServiseProviderLogin> {
                   } on FirebaseAuthException catch (e) {
                     Navigator.pop(context);
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(e.message ?? "Login failed")),
+                      SnackBar(
+                          content:
+                          Text(e.message ?? "Login failed")),
                     );
                   }
-                },
+                }
+                    : null,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: allValid ? buttonColor : Colors.grey,
+                  backgroundColor: allValid ? primaryColor : Colors.grey,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(6),
+                    borderRadius: BorderRadius.circular(12),
                   ),
+                  elevation: 5, // Subtle shadow
                 ),
                 child: const Text(
                   "Login",
                   style: TextStyle(
-                    fontSize: 16,
+                    fontSize: 18,
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 20),
 
             // ===== Forgot Password =====
             Center(
               child: TextButton(
-                onPressed: _resetPassword,
+                onPressed: _resetPassword, // Backend logic remains untouched
                 child: const Text(
                   "Forgot Password?",
                   style: TextStyle(
-                    color: buttonColor,
+                    color: primaryColor,
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
+                    decoration: TextDecoration.underline,
                   ),
                 ),
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 10),
 
             // ===== Sign Up =====
             Center(
-              child: TextButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const SignupScreen(),
-                    ),
-                  );
-                },
-                child: const Text(
-                  "Sign Up",
-                  style: TextStyle(
-                    color: buttonColor,
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text(
+                    "Don't have an account?",
+                    style: TextStyle(fontSize: 14, color: Colors.black54),
                   ),
-                ),
+                  TextButton(
+                    onPressed: () {
+                      // ⚠️ يجب استبدال SignupScreen بالشاشة الصحيحة إذا كانت موجودة في ملف آخر.
+                      // تم استبدال الكود التالي بـ Navigator.push المؤقت ليتوافق مع السياق.
+                      // يجب عليك التأكد من وجود `SignupScreen` في مكان يمكن الوصول إليه.
+                      // مثال:
+                      // Navigator.push(
+                      //   context,
+                      //   MaterialPageRoute(
+                      //     builder: (context) => const SignupScreen(),
+                      //   ),
+                      // );
+                      // بما أن الكود الخاص بـ `SignupScreen` غير مُدرج هنا، نفترض أنه تم استيراده.
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const SignupScreen(),
+                        ),
+                      );
+                    },
+                    child: const Text(
+                      "Sign Up",
+                      style: TextStyle(
+                        color: primaryColor,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
@@ -337,6 +415,7 @@ class SignupScreen extends StatefulWidget {
 }
 
 class _SignupScreenState extends State<SignupScreen> {
+  // --- Controllers (Backend logic remains untouched) ---
   final TextEditingController firstNameController = TextEditingController();
   final TextEditingController lastNameController = TextEditingController();
   final TextEditingController phoneController = TextEditingController();
@@ -353,6 +432,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
   bool _obscurePassword = true;
 
+  // --- Getters and Validators (Backend logic remains untouched) ---
   bool get isFirstValid => firstNameController.text.trim().isNotEmpty;
   bool get isLastValid => lastNameController.text.trim().isNotEmpty;
   bool get isPhoneValid {
@@ -385,7 +465,7 @@ class _SignupScreenState extends State<SignupScreen> {
       setState(() => lastNameError = isLastValid ? null : 'Required');
 
   void validatePhone() => setState(
-    () => phoneError = isPhoneValid ? null : 'Not valid Jordanian number',
+        () => phoneError = isPhoneValid ? null : 'Not valid Jordanian number',
   );
 
   void validateEmail() =>
@@ -395,7 +475,7 @@ class _SignupScreenState extends State<SignupScreen> {
       setState(() => passError = isPassValid ? null : 'Password not valid');
 
   void validateMapLink() => setState(
-    () => mapLinkError = isMapLinkValid ? null : 'Invalid Google Maps link',
+        () => mapLinkError = isMapLinkValid ? null : 'Invalid Google Maps link',
   );
 
   bool _isValidMapLink(String link) {
@@ -405,14 +485,14 @@ class _SignupScreenState extends State<SignupScreen> {
 
     final host = uri.host.toLowerCase();
 
-    final isGoogleMaps =
-        host.contains('google.com') ||
+    final isGoogleMaps = host.contains('google.com') ||
         host.contains('maps.app.goo.gl') ||
         host.contains('goo.gl') ||
         host.contains('google.co');
 
     return isGoogleMaps;
   }
+  // --- END Getters and Validators ---
 
   @override
   void dispose() {
@@ -425,24 +505,63 @@ class _SignupScreenState extends State<SignupScreen> {
     super.dispose();
   }
 
+  // 🎨 Modern Input Decoration Function for Signup
+  InputDecoration _buildInputDecoration(String labelText, String? errorText,
+      {Widget? suffixIcon}) {
+    const Color primaryColor = Color(0xFF00457C);
+    return InputDecoration(
+      labelText: labelText,
+      labelStyle: const TextStyle(color: primaryColor),
+      floatingLabelStyle:
+      const TextStyle(color: primaryColor, fontWeight: FontWeight.bold),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Colors.grey),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: primaryColor, width: 1.0),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: primaryColor, width: 2.0),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Colors.red, width: 1.5),
+      ),
+      errorText: errorText,
+      suffixIcon: suffixIcon,
+      contentPadding:
+      const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+      filled: true,
+      fillColor: primaryColor.withOpacity(0.03),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final allValid =
+    const Color primaryColor = Color(0xFF00457C);
+    bool allValid =
         isFirstValid &&
-        isLastValid &&
-        isPhoneValid &&
-        isEmailValid &&
-        isPassValid &&
-        isMapLinkValid;
+            isLastValid &&
+            isPhoneValid &&
+            isEmailValid &&
+            isPassValid &&
+            isMapLinkValid;
 
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios, color: primaryColor),
+          onPressed: () => Navigator.pop(context),
+        ),
         title: const Text(
           'Create Account',
-          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+          style: TextStyle(color: primaryColor, fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
       ),
@@ -452,19 +571,15 @@ class _SignupScreenState extends State<SignupScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              "Please fill in the information below",
-              style: TextStyle(fontSize: 16, color: Color(0xFFB68645)),
+              "Please fill in the information below to register as a Service Provider.",
+              style: TextStyle(fontSize: 16, color: primaryColor),
             ),
             const SizedBox(height: 24),
 
             // First Name
             TextField(
               controller: firstNameController,
-              decoration: InputDecoration(
-                labelText: "First Name",
-                border: const OutlineInputBorder(),
-                errorText: firstNameError,
-              ),
+              decoration: _buildInputDecoration("First Name", firstNameError),
               onChanged: (_) => validateFirst(),
             ),
             const SizedBox(height: 16),
@@ -472,11 +587,7 @@ class _SignupScreenState extends State<SignupScreen> {
             // Last Name
             TextField(
               controller: lastNameController,
-              decoration: InputDecoration(
-                labelText: "Last Name",
-                border: const OutlineInputBorder(),
-                errorText: lastNameError,
-              ),
+              decoration: _buildInputDecoration("Last Name", lastNameError),
               onChanged: (_) => validateLast(),
             ),
             const SizedBox(height: 16),
@@ -485,19 +596,15 @@ class _SignupScreenState extends State<SignupScreen> {
             TextField(
               controller: phoneController,
               keyboardType: TextInputType.phone,
-              decoration: InputDecoration(
-                labelText: "Phone Number",
-                border: const OutlineInputBorder(),
-                errorText: phoneError,
-              ),
+              decoration: _buildInputDecoration("Phone Number", phoneError),
               onChanged: (_) => validatePhone(),
             ),
             const SizedBox(height: 12),
-
+            // Phone validation helper
             if (!isPhoneValid && phoneController.text.isNotEmpty)
               const Text(
-                "Phone number must start with +962",
-                style: TextStyle(fontSize: 13, color: Color(0xFFB68645)),
+                "Phone number must start with +962 (e.g., +96277xxxxxxxxx)",
+                style: TextStyle(fontSize: 13, color: primaryColor),
               ),
             const SizedBox(height: 16),
 
@@ -505,11 +612,7 @@ class _SignupScreenState extends State<SignupScreen> {
             TextField(
               controller: emailController,
               keyboardType: TextInputType.emailAddress,
-              decoration: InputDecoration(
-                labelText: "Email",
-                border: const OutlineInputBorder(),
-                errorText: emailError,
-              ),
+              decoration: _buildInputDecoration("Email", emailError),
               onChanged: (_) => validateEmail(),
             ),
             const SizedBox(height: 16),
@@ -518,10 +621,9 @@ class _SignupScreenState extends State<SignupScreen> {
             TextField(
               controller: passController,
               obscureText: _obscurePassword,
-              decoration: InputDecoration(
-                labelText: "Password",
-                border: const OutlineInputBorder(),
-                errorText: passError,
+              decoration: _buildInputDecoration(
+                "Password",
+                passError,
                 suffixIcon: IconButton(
                   onPressed: () {
                     setState(() {
@@ -530,6 +632,7 @@ class _SignupScreenState extends State<SignupScreen> {
                   },
                   icon: Icon(
                     _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                    color: primaryColor,
                   ),
                 ),
               ),
@@ -537,14 +640,32 @@ class _SignupScreenState extends State<SignupScreen> {
             ),
             const SizedBox(height: 12),
 
+            // Password requirements
             const Text(
-              "Password must contain:\n"
-              "• At least 8 characters\n"
-              "• One uppercase letter\n"
-              "• One lowercase letter\n"
-              "• One number\n"
-              "• One special character (!@#\$&*~)",
-              style: TextStyle(fontSize: 13, color: Color(0xFFB68645)),
+              "Password must contain:",
+              style: TextStyle(
+                fontSize: 13,
+                color: primaryColor,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const Padding(
+              padding: EdgeInsets.only(left: 8.0, top: 4.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text("- At least 8 characters",
+                      style: TextStyle(fontSize: 13, color: Colors.black54)),
+                  Text("- Uppercase (A-Z)",
+                      style: TextStyle(fontSize: 13, color: Colors.black54)),
+                  Text("- Lowercase (a-z)",
+                      style: TextStyle(fontSize: 13, color: Colors.black54)),
+                  Text("- Number (0-9)",
+                      style: TextStyle(fontSize: 13, color: Colors.black54)),
+                  Text("- Special character (!@#\$%^&*)",
+                      style: TextStyle(fontSize: 13, color: Colors.black54)),
+                ],
+              ),
             ),
             const SizedBox(height: 16),
 
@@ -552,163 +673,189 @@ class _SignupScreenState extends State<SignupScreen> {
             TextField(
               controller: mapLinkController,
               keyboardType: TextInputType.url,
-              decoration: InputDecoration(
-                labelText: "Google Maps Link",
+              decoration: _buildInputDecoration(
+                "Google Maps Link",
+                mapLinkError,
+              ).copyWith(
                 hintText: "Paste your Google Maps location link here",
-                border: const OutlineInputBorder(),
-                errorText: mapLinkError,
-                prefixIcon: const Icon(Icons.map, color: Color(0xFFB68645)),
+                prefixIcon:
+                const Icon(Icons.map_outlined, color: primaryColor),
               ),
               onChanged: (_) => validateMapLink(),
             ),
             const SizedBox(height: 12),
+            // Map Link validation helper
             if (!isMapLinkValid && mapLinkController.text.isNotEmpty)
               const Text(
-                "Example: https://maps.app.goo.gl/abc123 or https://www.google.com/maps/...",
-                style: TextStyle(fontSize: 13, color: Color(0xFFB68645)),
+                "Please enter a valid Google Maps link.",
+                style: TextStyle(fontSize: 13, color: primaryColor),
               ),
 
             const SizedBox(height: 32),
 
-            // Sign Up Button
+            // Sign Up Button (Backend logic remains untouched)
             SizedBox(
               width: double.infinity,
+              height: 55,
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: allValid
-                      ? const Color(0xFFB68645)
-                      : Colors.grey,
+                  backgroundColor: allValid ? primaryColor : Colors.grey,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(12),
                   ),
+                  elevation: 5,
                 ),
                 onPressed: allValid
                     ? () async {
-                        showDialog(
-                          context: context,
-                          barrierDismissible: false,
-                          builder: (_) =>
-                              const Center(child: CircularProgressIndicator()),
-                        );
+                  showDialog(
+                    context: context,
+                    barrierDismissible: false,
+                    builder: (_) =>
+                    const Center(child: CircularProgressIndicator(color: primaryColor)),
+                  );
 
-                        try {
-                          final auth = FirebaseAuth.instance;
-                          final cred = await auth
-                              .createUserWithEmailAndPassword(
-                                email: emailController.text.trim(),
-                                password: passController.text,
-                              );
+                  try {
+                    final auth = FirebaseAuth.instance;
+                    final cred =
+                    await auth.createUserWithEmailAndPassword(
+                      email: emailController.text.trim(),
+                      password: passController.text,
+                    );
 
-                          final user = cred.user;
-                          if (user == null)
-                            throw Exception("User creation failed");
+                    final user = cred.user;
+                    if (user == null)
+                      throw Exception("User creation failed");
 
-                          // 🔹 إرسال رابط التحقق
-                          await user
-                              .reload(); // تأكد من أن المستخدم تم تحميله بالكامل
-                          await Future.delayed(
-                            const Duration(seconds: 1),
-                          ); // تأخير بسيط
-                          await user.sendEmailVerification();
+                    // 🔹 إرسال رابط التحقق (Send verification link)
+                    await user.reload();
+                    await Future.delayed(
+                      const Duration(seconds: 1),
+                    );
+                    await user.sendEmailVerification();
 
-                          Navigator.pop(context); // إغلاق الـ loader
+                    Navigator.pop(context); // إغلاق الـ loader
 
-                          // 🔹 عرض Dialog للتحقق من البريد
-                          showDialog(
-                            context: context,
-                            barrierDismissible: false,
-                            builder: (context) => AlertDialog(
-                              title: const Text("Verify Your Email"),
-                              content: const Text(
-                                "A verification link has been sent to your email. "
-                                "Please verify it, then click Continue.",
-                              ),
-                              actions: [
-                                TextButton(
-                                  onPressed: () async {
-                                    await user.reload(); // تحديث حالة المستخدم
-                                    if (auth.currentUser!.emailVerified) {
-                                      // ✅ بعد التحقق نضيف المستخدم في Firestore
-                                      final firestore =
-                                          FirebaseFirestore.instance;
-                                      await firestore
-                                          .collection('service_providers')
-                                          .doc(user.uid)
-                                          .set({
-                                            'firstName': firstNameController
-                                                .text
-                                                .trim(),
-                                            'lastName': lastNameController.text
-                                                .trim(),
-                                            'phone': phoneController.text
-                                                .trim(),
-                                            'email': emailController.text
-                                                .trim(),
-                                            'mapLink': mapLinkController.text
-                                                .trim(),
-                                            'createdAt':
-                                                FieldValue.serverTimestamp(),
-                                          });
+                    // 🔹 عرض Dialog للتحقق من البريد (Show email verification dialog)
+                    showDialog(
+                      context: context,
+                      barrierDismissible: false,
+                      builder: (context) => AlertDialog(
+                        title: const Text("Verify Your Email"),
+                        content: const Text(
+                          "A verification link has been sent to your email. "
+                              "Please verify it, then click Continue.",
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () async {
+                              await user.reload(); // تحديث حالة المستخدم
+                              if (auth.currentUser!.emailVerified) {
+                                // ✅ بعد التحقق نضيف المستخدم في Firestore
+                                final firestore =
+                                    FirebaseFirestore.instance;
+                                await firestore
+                                    .collection('service_providers')
+                                    .doc(user.uid)
+                                    .set({
+                                  'firstName':
+                                  firstNameController.text.trim(),
+                                  'lastName':
+                                  lastNameController.text.trim(),
+                                  'phone': phoneController.text.trim(),
+                                  'email': emailController.text.trim(),
+                                  'mapLink':
+                                  mapLinkController.text.trim(),
+                                  'createdAt':
+                                  FieldValue.serverTimestamp(),
+                                });
 
-                                      Navigator.pop(
-                                        context,
-                                      ); // إغلاق الـ dialog
-                                      ScaffoldMessenger.of(
-                                        context,
-                                      ).showSnackBar(
-                                        const SnackBar(
-                                          content: Text(
-                                            "Account verified and created!",
-                                          ),
+                                Navigator.pop(
+                                    context); // إغلاق الـ dialog
+                                ScaffoldMessenger.of(
+                                  context,
+                                ).showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                      "Account verified and created!",
+                                    ),
+                                  ),
+                                );
+
+                                Navigator.pushReplacement(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        ServiceProviderHome1(
+                                          firstName:
+                                          firstNameController.text.trim(),
+                                          lastName:
+                                          lastNameController.text.trim(),
                                         ),
-                                      );
-
-                                      Navigator.pushReplacement(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (context) =>
-                                              ServiceProviderHome(
-                                                firstName: firstNameController
-                                                    .text
-                                                    .trim(),
-                                                lastName: lastNameController
-                                                    .text
-                                                    .trim(),
-                                              ),
-                                        ),
-                                      );
-                                    } else {
-                                      ScaffoldMessenger.of(
-                                        context,
-                                      ).showSnackBar(
-                                        const SnackBar(
-                                          content: Text(
-                                            "Please verify your email first",
-                                          ),
-                                        ),
-                                      );
-                                    }
-                                  },
-                                  child: const Text("Continue"),
-                                ),
-                              ],
-                            ),
-                          );
-                        } on FirebaseAuthException catch (e) {
-                          Navigator.pop(context);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text(e.message ?? "Error")),
-                          );
-                        }
-                      }
+                                  ),
+                                );
+                              } else {
+                                ScaffoldMessenger.of(
+                                  context,
+                                ).showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                      "Please verify your email first",
+                                    ),
+                                  ),
+                                );
+                              }
+                            },
+                            child: const Text("Continue"),
+                          ),
+                        ],
+                      ),
+                    );
+                  } on FirebaseAuthException catch (e) {
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                          content: Text(e.message ?? "Error")),
+                    );
+                  }
+                }
                     : null,
                 child: const Text(
                   "Sign Up",
-                  style: TextStyle(fontSize: 16, color: Colors.white),
+                  style: TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold),
                 ),
               ),
             ),
+            const SizedBox(height: 20),
+
+            // ----------------------------- LOGIN NAV (ADDED CODE) -----------------------------
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Text(
+                  "Already have an account?",
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.black54,
+                  ),
+                ),
+                TextButton(
+                  onPressed: () {
+                    // العودة لشاشة تسجيل الدخول السابقة (ServiseProviderLogin)
+                    Navigator.pop(context);
+                  },
+                  child: const Text(
+                    "Login",
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: primaryColor, // استخدام اللون الرئيسي
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            // ----------------------------------------------------------------------------------
           ],
         ),
       ),
@@ -717,12 +864,12 @@ class _SignupScreenState extends State<SignupScreen> {
 }
 
 //----------- servises of servise provider---------//
-class ServiceProviderHome extends StatefulWidget {
+class ServiceProviderHome1 extends StatefulWidget {
   final String firstName;
   final String lastName;
   final String email;
   final String phone;
-  const ServiceProviderHome({
+  const ServiceProviderHome1({
     Key? key,
     this.firstName = " ",
     this.lastName = " ",
@@ -730,10 +877,10 @@ class ServiceProviderHome extends StatefulWidget {
     this.phone = '',
   }) : super(key: key);
   @override
-  State<ServiceProviderHome> createState() => _ServiceProviderHomeState();
+  State<ServiceProviderHome1> createState() => _ServiceProviderHomeState();
 }
 
-class _ServiceProviderHomeState extends State<ServiceProviderHome> {
+class _ServiceProviderHomeState extends State<ServiceProviderHome1> {
   int _selectedIndex = 0;
   bool isLoading = true;
   List<String> myServices = [];
@@ -801,10 +948,10 @@ class _ServiceProviderHomeState extends State<ServiceProviderHome> {
 
   @override
   Widget build(BuildContext context) {
-    final Color activeColor = const Color(0xFFB68645);
+    final Color activeColor = const Color(0xFF00457C);
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Color(0xFFB68645),
+        backgroundColor: Color(0xFF00457C),
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.white),
         title: const Text(
@@ -823,7 +970,7 @@ class _ServiceProviderHomeState extends State<ServiceProviderHome> {
         child: Column(
           children: [
             const DrawerHeader(
-              decoration: BoxDecoration(color: Color(0xFFB68645)),
+              decoration: BoxDecoration(color: Color(0xFF00457C)),
               child: Center(
                 child: Text(
                   'Menu',
@@ -892,7 +1039,7 @@ class _ServiceProviderHomeState extends State<ServiceProviderHome> {
                     MaterialPageRoute(
                       builder: (context) => const LoginScreen(),
                     ),
-                    (route) => false,
+                        (route) => false,
                   );
                 },
               ),
@@ -913,7 +1060,7 @@ class _ServiceProviderHomeState extends State<ServiceProviderHome> {
               style: const TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
-                color: Color(0xFFB68645),
+                color: Color(0xFF00457C),
               ),
             ),
           ),
@@ -971,7 +1118,7 @@ class ManageServicesPage extends StatefulWidget {
 }
 
 class _ManageServicesPageState extends State<ManageServicesPage> {
-  final Color brown = const Color(0xFFB68645);
+  final Color brown = const Color(0xFF00457C);
   // قائمة الخدمات
   List<Service> services = [
     Service(
@@ -1026,12 +1173,12 @@ class _ManageServicesPageState extends State<ManageServicesPage> {
     final service = isEdit
         ? services[editIndex]
         : Service(
-            name: "",
-            description: "",
-            price: 0.0,
-            duration: "",
-            isAvailable: true,
-          );
+      name: "",
+      description: "",
+      price: 0.0,
+      duration: "",
+      isAvailable: true,
+    );
     final nameCtrl = TextEditingController(text: service.name);
     final descCtrl = TextEditingController(text: service.description);
     final priceCtrl = TextEditingController(
@@ -1115,12 +1262,12 @@ class _ManageServicesPageState extends State<ManageServicesPage> {
 
   // حقل إدخال مع ستايل
   Widget _buildInput(
-    String label,
-    TextEditingController controller, {
-    String? hint,
-    int maxLines = 1,
-    TextInputType keyboard = TextInputType.text,
-  }) {
+      String label,
+      TextEditingController controller, {
+        String? hint,
+        int maxLines = 1,
+        TextInputType keyboard = TextInputType.text,
+      }) {
     return TextField(
       controller: controller,
       maxLines: maxLines,
@@ -1153,58 +1300,58 @@ class _ManageServicesPageState extends State<ManageServicesPage> {
         padding: const EdgeInsets.all(16.0),
         child: services.isEmpty
             ? const Center(
-                child: Text(
-                  "No services added yet.",
-                  style: TextStyle(fontSize: 18, color: Colors.grey),
-                ),
-              )
+          child: Text(
+            "No services added yet.",
+            style: TextStyle(fontSize: 18, color: Colors.grey),
+          ),
+        )
             : ListView.builder(
-                itemCount: services.length,
-                itemBuilder: (context, i) {
-                  final s = services[i];
-                  return Card(
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    margin: const EdgeInsets.symmetric(vertical: 8),
-                    elevation: 3,
-                    child: ListTile(
-                      leading: Icon(
-                        Icons.build,
-                        color: s.isAvailable ? brown : Colors.grey,
-                      ),
-                      title: Text(
-                        s.name,
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      subtitle: Text(
-                        "${s.description}\nPrice: ${s.price} JD | Duration: ${s.duration}\nStatus: ${s.isAvailable ? "Available" : "Not Available"}",
-                        style: const TextStyle(height: 1.4),
-                      ),
-                      isThreeLine: true,
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          IconButton(
-                            icon: const Icon(
-                              Icons.edit,
-                              color: Colors.blueAccent,
-                            ),
-                            onPressed: () => _editService(i),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.delete, color: Colors.red),
-                            onPressed: () => _deleteService(i),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
+          itemCount: services.length,
+          itemBuilder: (context, i) {
+            final s = services[i];
+            return Card(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
               ),
+              margin: const EdgeInsets.symmetric(vertical: 8),
+              elevation: 3,
+              child: ListTile(
+                leading: Icon(
+                  Icons.build,
+                  color: s.isAvailable ? brown : Colors.grey,
+                ),
+                title: Text(
+                  s.name,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                subtitle: Text(
+                  "${s.description}\nPrice: ${s.price} JD | Duration: ${s.duration}\nStatus: ${s.isAvailable ? "Available" : "Not Available"}",
+                  style: const TextStyle(height: 1.4),
+                ),
+                isThreeLine: true,
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      icon: const Icon(
+                        Icons.edit,
+                        color: Colors.blueAccent,
+                      ),
+                      onPressed: () => _editService(i),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.delete, color: Colors.red),
+                      onPressed: () => _deleteService(i),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        ),
       ),
       floatingActionButton: FloatingActionButton.extended(
         backgroundColor: brown,
@@ -1351,7 +1498,7 @@ class _ManagePostsPageState extends State<ManagePostsPage> {
 
   @override
   Widget build(BuildContext context) {
-    const Color primaryColor = Color(0xFFB68645);
+    const Color primaryColor = Color(0xFF00457C);
     return Scaffold(
       appBar: AppBar(
         backgroundColor: primaryColor,
@@ -1394,8 +1541,8 @@ class _ManagePostsPageState extends State<ManagePostsPage> {
               items: myServices
                   .map(
                     (service) =>
-                        DropdownMenuItem(value: service, child: Text(service)),
-                  )
+                    DropdownMenuItem(value: service, child: Text(service)),
+              )
                   .toList(),
               onChanged: (val) {
                 setState(() {
@@ -1497,7 +1644,7 @@ class ContactClientPage extends StatefulWidget {
 class _ContactClientPageState extends State<ContactClientPage> {
   @override
   Widget build(BuildContext context) {
-    const Color primaryColor = Color(0xFFB68645);
+    const Color primaryColor = Color(0xFF00457C);
 
     return Scaffold(
       appBar: AppBar(
@@ -1642,7 +1789,7 @@ class _ProviderChatScreenState extends State<ProviderChatScreen> {
 
   @override
   Widget build(BuildContext context) {
-    const Color primaryColor = Color(0xFFB68645);
+    const Color primaryColor = Color(0xFF00457C);
 
     return Scaffold(
       appBar: AppBar(
@@ -1692,10 +1839,10 @@ class _ProviderChatScreenState extends State<ProviderChatScreen> {
                     final isProvider = msg['senderId'] == providerId;
                     final time = msg['timestamp'] != null
                         ? (msg['timestamp'] as Timestamp)
-                              .toDate()
-                              .toLocal()
-                              .toString()
-                              .substring(11, 16)
+                        .toDate()
+                        .toLocal()
+                        .toString()
+                        .substring(11, 16)
                         : '';
 
                     return Align(
@@ -1781,7 +1928,7 @@ class OrdersScreen extends StatefulWidget {
 }
 
 class _OrdersScreenState extends State<OrdersScreen> {
-  final Color brown = const Color(0xFFB68645);
+  final Color brown = const Color(0xFF00457C);
   List<Map<String, dynamic>> orders = [
     {
       "id": 1,
@@ -1964,7 +2111,7 @@ class _ServiceProviderProfileScreenState
 
   @override
   Widget build(BuildContext context) {
-    const primaryColor = Color(0xFFB68645);
+    const primaryColor = Color(0xFF00457C);
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -1995,7 +2142,7 @@ class _ServiceProviderProfileScreenState
               style: const TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
-                color: Color(0xFFB68645),
+                color: Color(0xFF00457C),
               ),
             ),
             const SizedBox(height: 8),
@@ -2018,7 +2165,7 @@ class _ServiceProviderProfileScreenState
               Icons.edit,
               "Edit Profile",
               primaryColor,
-              () async {
+                  () async {
                 final result = await Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -2052,13 +2199,13 @@ class _ServiceProviderProfileScreenState
               Icons.notifications,
               "Notifications",
               primaryColor,
-              () {},
+                  () {},
             ),
             _buildSettingTile(
               Icons.help_outline,
               "Help & Support",
               primaryColor,
-              () {},
+                  () {},
             ),
           ],
         ),
@@ -2067,11 +2214,11 @@ class _ServiceProviderProfileScreenState
   }
 
   Widget _buildSettingTile(
-    IconData icon,
-    String title,
-    Color color,
-    VoidCallback onTap,
-  ) {
+      IconData icon,
+      String title,
+      Color color,
+      VoidCallback onTap,
+      ) {
     return Card(
       elevation: 2,
       margin: const EdgeInsets.symmetric(vertical: 6),
@@ -2133,7 +2280,7 @@ class _EditServiceProviderProfileScreenState
 
   @override
   Widget build(BuildContext context) {
-    const primaryColor = Color(0xFFB68645);
+    const primaryColor = Color(0xFF00457C);
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -2260,11 +2407,11 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
   // ✅ دالة للتحقق من التطابق
   bool get isConfirmMatching =>
       confirmController.text.isNotEmpty &&
-      newController.text.isNotEmpty &&
-      confirmController.text == newController.text;
+          newController.text.isNotEmpty &&
+          confirmController.text == newController.text;
   @override
   Widget build(BuildContext context) {
-    const primaryColor = Color(0xFFB68645);
+    const primaryColor = Color(0xFF00457C);
     return Scaffold(
       appBar: AppBar(
         backgroundColor: primaryColor,
@@ -2381,7 +2528,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                         content: Text(
                           "Password changed successfully (Front-end only)",
                         ),
-                        backgroundColor: Color(0xFFB68645),
+                        backgroundColor: Color(0xFF00457C),
                       ),
                     );
                     Navigator.pop(context);

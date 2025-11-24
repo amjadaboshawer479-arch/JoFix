@@ -10,13 +10,14 @@ import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-//------------------ 2. Phone Number Screen ------------------//
+
 // ------------------- Client Home Page ------------------- //
 class ClientHomePage extends StatefulWidget {
   const ClientHomePage({super.key});
   @override
   State<ClientHomePage> createState() => _ClientHomePageState();
 }
+
 class _ClientHomePageState extends State<ClientHomePage> {
   final phoneController = TextEditingController();
   final emailController = TextEditingController();
@@ -26,12 +27,14 @@ class _ClientHomePageState extends State<ClientHomePage> {
   bool isPasswordValid = false;
   bool isPasswordVisible = false;
   String? loginError; // 🔥 متغير لعرض الخطأ تحت الحقول
+
   // Phone validation
   void _checkPhone(String value) {
     setState(() {
       isPhoneValid = value.trim().length >= 13; // +9627XXXXXXXX
     });
   }
+
   // Email validation
   void _checkEmail(String value) {
     setState(() {
@@ -39,6 +42,7 @@ class _ClientHomePageState extends State<ClientHomePage> {
       isEmailValid = emailReg.hasMatch(value.trim());
     });
   }
+
   // Password validation
   void _checkPassword(String value) {
     final hasUpper = value.contains(RegExp(r'[A-Z]'));
@@ -50,41 +54,51 @@ class _ClientHomePageState extends State<ClientHomePage> {
           value.length >= 8 && hasUpper && hasLower && hasDigit && hasSpecial;
     });
   }
+
   // 🔥 تسجيل الدخول بالبريد وكلمة السر
   Future<void> _loginClient() async {
     final email = emailController.text.trim();
     final password = passwordController.text.trim();
     final phone = phoneController.text.trim();
+
     setState(() {
       loginError = null;
     });
+
     try {
       final auth = FirebaseAuth.instance;
       final cred = await auth.signInWithEmailAndPassword(
         email: email,
         password: password,
       );
+
       final uid = cred.user?.uid;
       if (uid == null) throw Exception("User ID not found");
+
       final firestore = FirebaseFirestore.instance;
       final doc = await firestore.collection('clients').doc(uid).get();
+
       if (!doc.exists) {
         setState(() {
           loginError = "User not found in Firestore.";
         });
         return;
       }
+
       final data = doc.data()!;
       final storedPhone = (data['phone'] ?? '') as String;
+
       if (storedPhone.isNotEmpty && storedPhone != phone) {
         setState(() {
           loginError = "Phone number doesn't match our records.";
         });
         return;
       }
+
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text("Login successful!")));
+
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => const ActivityHomeScreen()),
@@ -105,6 +119,7 @@ class _ClientHomePageState extends State<ClientHomePage> {
       });
     }
   }
+
   // 🔥 تسجيل الدخول بالفيسبوك
   Future<void> _loginWithFacebook() async {
     try {
@@ -115,19 +130,25 @@ class _ClientHomePageState extends State<ClientHomePage> {
         );
         return;
       }
+
       final accessToken = result.accessToken!;
       final credential = FacebookAuthProvider.credential(accessToken.token);
+
       final userCredential = await FirebaseAuth.instance.signInWithCredential(
         credential,
       );
+
       final user = userCredential.user;
       if (user == null) throw Exception("User not found");
+
       final uid = user.uid;
       final email = user.email ?? "";
       final displayName = user.displayName ?? "";
       final phone = "";
+
       final docRef = FirebaseFirestore.instance.collection("clients").doc(uid);
       final doc = await docRef.get();
+
       if (!doc.exists) {
         await docRef.set({
           "uid": uid,
@@ -137,6 +158,7 @@ class _ClientHomePageState extends State<ClientHomePage> {
           "createdAt": FieldValue.serverTimestamp(),
         });
       }
+
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => const ActivityHomeScreen()),
@@ -147,27 +169,34 @@ class _ClientHomePageState extends State<ClientHomePage> {
       ).showSnackBar(SnackBar(content: Text("Error: $e")));
     }
   }
+
   // 🔥 تسجيل الدخول بجوجل
   Future<void> _loginWithGoogle() async {
     try {
       final googleUser = await GoogleSignIn().signIn();
       if (googleUser == null) return;
+
       final googleAuth = await googleUser.authentication;
       final credential = GoogleAuthProvider.credential(
         accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
       );
+
       final userCredential = await FirebaseAuth.instance.signInWithCredential(
         credential,
       );
+
       final user = userCredential.user;
       if (user == null) throw Exception("User not found");
+
       final uid = user.uid;
       final email = user.email ?? "";
       final displayName = user.displayName ?? "";
       final phone = "";
+
       final docRef = FirebaseFirestore.instance.collection("clients").doc(uid);
       final doc = await docRef.get();
+
       if (!doc.exists) {
         await docRef.set({
           "uid": uid,
@@ -177,6 +206,7 @@ class _ClientHomePageState extends State<ClientHomePage> {
           "createdAt": FieldValue.serverTimestamp(),
         });
       }
+
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => const ActivityHomeScreen()),
@@ -187,191 +217,234 @@ class _ClientHomePageState extends State<ClientHomePage> {
       ).showSnackBar(SnackBar(content: Text("Error: $e")));
     }
   }
+
   @override
   Widget build(BuildContext context) {
-    const Color borderColor = Color(0xFFB68645);
-    const Color buttonColor = Color(0xFFB68645);
+    const Color borderColor = Color(0xFF00457C);
+    const Color buttonColor = Color(0xFF00457C);
+
     bool allValid = isPhoneValid && isEmailValid && isPasswordValid;
+
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(backgroundColor: Colors.white, elevation: 0),
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        centerTitle: true,
+        title: const Text(
+          "Client Login",
+          style: TextStyle(
+            color: borderColor,
+            fontSize: 22,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+
+            const SizedBox(height: 5),
             const Text(
-              "Enter Your Details",
+              "Welcome Back!",
               style: TextStyle(
-                fontSize: 20,
-                color: borderColor,
+                fontSize: 30,
+                color: Color(0xFF00457C),
                 fontWeight: FontWeight.bold,
               ),
             ),
-            const SizedBox(height: 16),
-            // Phone Field
-            TextField(
-              controller: phoneController,
-              keyboardType: TextInputType.phone,
-              onChanged: _checkPhone,
-              decoration: InputDecoration(
-                hintText: "Phone e.g. +9627XXXXXXXX",
-                enabledBorder: OutlineInputBorder(
-                  borderSide: const BorderSide(color: borderColor),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderSide: const BorderSide(color: borderColor, width: 1.5),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 14,
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            // Email Field
-            TextField(
-              controller: emailController,
-              keyboardType: TextInputType.emailAddress,
-              onChanged: _checkEmail,
-              decoration: InputDecoration(
-                hintText: "Email",
-                enabledBorder: OutlineInputBorder(
-                  borderSide: const BorderSide(color: borderColor),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderSide: const BorderSide(color: borderColor, width: 1.5),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 14,
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            // Password Field
-            TextField(
-              controller: passwordController,
-              obscureText: !isPasswordVisible,
-              onChanged: _checkPassword,
-              decoration: InputDecoration(
-                hintText: "Password",
-                enabledBorder: OutlineInputBorder(
-                  borderSide: const BorderSide(color: borderColor),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderSide: const BorderSide(color: borderColor, width: 1.5),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 14,
-                ),
-                suffixIcon: IconButton(
-                  icon: Icon(
-                    isPasswordVisible ? Icons.visibility : Icons.visibility_off,
-                    color: borderColor,
-                  ),
-                  onPressed: () {
-                    setState(() {
-                      isPasswordVisible = !isPasswordVisible;
-                    });
-                  },
-                ),
-              ),
-            ),
-            const SizedBox(height: 8),
-            // Password rules
+            const SizedBox(height: 5),
+
             const Text(
-              "Password must include:"
-              "- At least 8 characters"
-              "- Uppercase letter (A-Z)"
-              "- Lowercase letter (a-z)"
-              "- Number (0-9)"
-              "- Special character (!@#\$%^&*)",
-              style: TextStyle(color: borderColor, fontSize: 12),
-            ),
-            const SizedBox(height: 16),
-            // 🔥 رسالة الخطأ في حالة المستخدم غير موجود
-            if (loginError != null)
-              Text(
-                loginError!,
-                style: const TextStyle(color: Colors.red, fontSize: 13),
+              "Sign in to your Client account.",
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.grey,
+                fontWeight: FontWeight.w400,
               ),
+            ),
+            const SizedBox(height: 40),
+
+            // -------------------------------- PHONE --------------------------------
+            // Label for Phone/Full Name
+            const Text(
+              "Phone Number",
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.black54, // Color similar to the labels in the image
+              ),
+            ),
+            const SizedBox(height: 6), // Small space between label and box
+            _buildStyledField(
+              controller: phoneController,
+              hint: "Phone e.g. +9627XXXXXXXX",
+              keyboard: TextInputType.phone,
+              onChanged: _checkPhone,
+            ),
+            if (!isPhoneValid && phoneController.text.isNotEmpty)
+              const Padding(
+                padding: EdgeInsets.only(top: 5),
+                child: Text(
+                  "Phone number must start with +962",
+                  style: TextStyle(
+                    color: borderColor,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+
             const SizedBox(height: 16),
-            // Login Button
+
+            // -------------------------------- EMAIL --------------------------------
+            // Label for Email
+            const Text(
+              "Email ID",
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.black54,
+              ),
+            ),
+            const SizedBox(height: 6),
+            _buildStyledField(
+              controller: emailController,
+              hint: "Email",
+              keyboard: TextInputType.emailAddress,
+              onChanged: _checkEmail,
+            ),
+
+            const SizedBox(height: 16),
+
+            // ------------------------------- PASSWORD -------------------------------
+            // Label for Password
+            const Text(
+              "Password",
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.black54,
+              ),
+            ),
+            const SizedBox(height: 6),
+            _buildStyledField(
+              controller: passwordController,
+              hint: "Password",
+              obscure: !isPasswordVisible,
+              onChanged: _checkPassword,
+              suffixIcon: IconButton(
+                icon: Icon(
+                  isPasswordVisible ? Icons.visibility : Icons.visibility_off,
+                  color: borderColor,
+                ),
+                onPressed: () {
+                  setState(() {
+                    isPasswordVisible = !isPasswordVisible;
+                  });
+                },
+              ),
+            ),
+
+            const SizedBox(height: 50),
+
+            // -------------------------------- ERROR --------------------------------
+            if (loginError != null)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: Text(
+                  loginError!,
+                  style: const TextStyle(
+                    color: Colors.red,
+                    fontSize: 13,
+                  ),
+                ),
+              ),
+
+            // ------------------------------- LOGIN BUTTON -------------------------------
             SizedBox(
               width: double.infinity,
-              height: 48,
+              height: 50,
               child: ElevatedButton(
                 onPressed: allValid ? _loginClient : null,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: allValid ? buttonColor : Colors.grey,
+                  elevation: allValid ? 3 : 0,
+                  shadowColor: borderColor.withOpacity(0.3),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(6),
+                    borderRadius: BorderRadius.circular(10),
                   ),
                 ),
                 child: const Text(
                   "Login",
-                  style: TextStyle(fontSize: 16, color: Colors.white),
+                  style: TextStyle(
+                    fontSize: 17,
+                    color: Colors.white,
+                  ),
                 ),
               ),
             ),
-            const SizedBox(height: 24),
-            const SizedBox(height: 12),
+
+            const SizedBox(height: 14),
+
             Center(
               child: TextButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const ForgotPasswordScreen(),
-                    ),
-                  );
-                },
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const ForgotPasswordScreen()),
+                ),
                 child: const Text(
                   "Forgot Password?",
                   style: TextStyle(
                     fontSize: 14,
-                    color: Color(0xFFB68645),
+                    color: borderColor,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
               ),
             ),
-            // Divider with OR
+
+            const SizedBox(height: 10),
+
+            // --------------------------------- OR ---------------------------------
             Row(
               children: const [
-                Expanded(child: Divider(color: Colors.grey)),
+                Expanded(child: Divider(color: Colors.black26)),
                 Padding(
                   padding: EdgeInsets.symmetric(horizontal: 8),
-                  child: Text("or"),
+                  child: Text(
+                    "or",
+                    style: TextStyle(color: Colors.black45),
+                  ),
                 ),
-                Expanded(child: Divider(color: Colors.grey)),
+                Expanded(child: Divider(color: Colors.black26)),
               ],
             ),
+
             const SizedBox(height: 24),
-            // ✅ Social Buttons (Google & Facebook only)
+
+            // ------------------------------- SOCIAL --------------------------------
             _buildSocialButton("Continue With Google", isFacebook: false),
+
             const SizedBox(height: 12),
+
             _buildSocialButton(
               "Continue With Facebook",
               icon: Icons.facebook,
               isFacebook: true,
             ),
-            const SizedBox(height: 24),
-            // Don’t have an account? + Sign Up
+
+            const SizedBox(height: 26),
+
+            // ----------------------------- SIGNUP NAV -----------------------------
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 const Text(
                   "Don’t have an account?",
-                  style: TextStyle(fontSize: 14, color: Colors.black54),
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.black54,
+                  ),
                 ),
                 TextButton(
                   onPressed: () {
@@ -396,6 +469,49 @@ class _ClientHomePageState extends State<ClientHomePage> {
       ),
     );
   }
+
+
+// 🔥 BEAUTIFUL REUSABLE FIELD -------------------------
+  Widget _buildStyledField({
+    required TextEditingController controller,
+    required String hint, // This will become the placeholder/current value
+    required Function(String) onChanged,
+    TextInputType keyboard = TextInputType.text,
+    bool obscure = false,
+    Widget? suffixIcon,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black12,
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: TextField(
+        controller: controller,
+        keyboardType: keyboard,
+        obscureText: obscure,
+        onChanged: onChanged,
+        // The image uses the hint text as the current value style
+        decoration: InputDecoration(
+          hintText: hint,
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 14,
+            vertical: 16,
+          ),
+          suffixIcon: suffixIcon,
+        ),
+      ),
+    );
+  }
+
+
   // Social Button builder
   Widget _buildSocialButton(
       String text, {
@@ -422,24 +538,31 @@ class _ClientHomePageState extends State<ClientHomePage> {
     );
   }
 }
+
 //---------FORGET PASSWORD--------//
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});
+
   @override
   State<ForgotPasswordScreen> createState() => _ForgotPasswordScreenState();
 }
+
 class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   final emailController = TextEditingController();
   bool isLoading = false;
+
   Future<void> _resetPassword() async {
     final email = emailController.text.trim();
+
     if (email.isEmpty) {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text("Please enter your email.")));
       return;
     }
+
     setState(() => isLoading = true);
+
     try {
       await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
       ScaffoldMessenger.of(context).showSnackBar(
@@ -447,6 +570,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           content: Text("Password reset link sent! Check your email."),
         ),
       );
+
       Navigator.pop(context);
     } on FirebaseAuthException catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -456,9 +580,11 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       setState(() => isLoading = false);
     }
   }
+
   @override
   Widget build(BuildContext context) {
-    const primaryColor = Color(0xFFB68645);
+    const primaryColor = Color(0xFF00457C);
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -517,15 +643,19 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     );
   }
 }
+
 //------------------ 3. SignUp Screen ------------------//
 // الصفحة الرابعة التي ستستقبل الأسماء
 // شاشة تسجيل العميل
+
 class SignupScreen extends StatefulWidget {
   const SignupScreen({Key? key}) : super(key: key);
   @override
   State<SignupScreen> createState() => _SignupScreenState();
 }
+
 class _SignupScreenState extends State<SignupScreen> {
+  // ... (نفس المتغيرات والتحققات والدوال المنطقية) ...
   final TextEditingController firstNameController = TextEditingController();
   final TextEditingController lastNameController = TextEditingController();
   final TextEditingController phoneController = TextEditingController();
@@ -543,13 +673,15 @@ class _SignupScreenState extends State<SignupScreen> {
   bool get isLastValid => lastNameController.text.trim().isNotEmpty;
   bool get isPhoneValid {
     final phone = phoneController.text.trim();
-    return phone.isNotEmpty && phone.startsWith("+962") && phone.length > 4;
+    return phone.isNotEmpty && phone.startsWith("+962") && phone.length >= 13; // +9627XXXXXXXX
   }
+
   bool get isEmailValid {
     final email = emailController.text.trim();
     final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
     return emailRegex.hasMatch(email);
   }
+
   bool get isPassValid {
     final pass = passController.text;
     final lengthOK = pass.length >= 8;
@@ -559,6 +691,7 @@ class _SignupScreenState extends State<SignupScreen> {
     final specialOK = RegExp(r'[!@#\$&*~]').hasMatch(pass);
     return lengthOK && numberOK && upperOK && lowerOK && specialOK;
   }
+
   // ===== Validation functions =====
   void validateFirst() =>
       setState(() => firstNameError = isFirstValid ? null : 'Required');
@@ -571,6 +704,7 @@ class _SignupScreenState extends State<SignupScreen> {
       setState(() => emailError = isEmailValid ? null : 'Not valid email');
   void validatePass() =>
       setState(() => passError = isPassValid ? null : 'Password not valid');
+
   @override
   void dispose() {
     firstNameController.dispose();
@@ -580,18 +714,21 @@ class _SignupScreenState extends State<SignupScreen> {
     passController.dispose();
     super.dispose();
   }
-  // 🔥 دالة إنشاء الحساب والتخزين في الكوليكشن clients
+
+  // 🔥 دالة إنشاء الحساب والتخزين في الكوليكشن clients (نفس الدالة الأصلية)
   Future<void> _handleSignup() async {
     final firstName = firstNameController.text.trim();
     final lastName = lastNameController.text.trim();
     final phone = phoneController.text.trim();
     final email = emailController.text.trim();
     final password = passController.text;
+
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (_) => const Center(child: CircularProgressIndicator()),
     );
+
     try {
       // 1️⃣ إنشاء الحساب داخل Firebase Authentication
       final auth = FirebaseAuth.instance;
@@ -600,8 +737,10 @@ class _SignupScreenState extends State<SignupScreen> {
         password: password,
       );
       await cred.user!.sendEmailVerification();
+
       final uid = cred.user?.uid;
       if (uid == null) throw Exception("User ID not found");
+
       // 2️⃣ إضافة بيانات المستخدم داخل كوليكشن clients
       final firestore = FirebaseFirestore.instance;
       await firestore.collection('clients').doc(cred.user!.uid).set({
@@ -611,12 +750,14 @@ class _SignupScreenState extends State<SignupScreen> {
         'email': email,
         'createdAt': FieldValue.serverTimestamp(),
       });
+
       Navigator.pop(context); // إغلاق التحميل
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text("Please check your inbox to verifay your email."),
         ),
       );
+
       // التنقل للشاشة الرئيسية بعد التسجيل
       Navigator.pushReplacement(
         context,
@@ -638,134 +779,288 @@ class _SignupScreenState extends State<SignupScreen> {
       ).showSnackBar(SnackBar(content: Text(e.toString())));
     }
   }
+
+  // 🔥 وظائف الدخول الاجتماعي (يمكن نقلها إلى كلاس مشترك لاحقًا)
+  Future<void> _signupWithGoogle() async {
+    // يرجى إضافة منطق التسجيل عبر جوجل هنا
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Google Sign Up logic placeholder")),
+    );
+  }
+
+  Future<void> _signupWithFacebook() async {
+    // يرجى إضافة منطق التسجيل عبر فيسبوك هنا
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Facebook Sign Up logic placeholder")),
+    );
+  }
+
+  // -------------------------------------------------------------------
+  // 🔥 دالة مساعدة لتصميم حقول الإدخال
+  Widget _buildStyledField({
+    required TextEditingController controller,
+    required String hint,
+    required Function(String) onChanged,
+    TextInputType keyboard = TextInputType.text,
+    bool obscure = false,
+    Widget? suffixIcon,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black12,
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: TextField(
+        controller: controller,
+        keyboardType: keyboard,
+        obscureText: obscure,
+        onChanged: onChanged,
+        decoration: InputDecoration(
+          hintText: hint,
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 14,
+            vertical: 16,
+          ),
+          suffixIcon: suffixIcon,
+        ),
+      ),
+    );
+  }
+
+  // 🔥 دالة مساعدة لبناء الحقل مع العنوان ورسالة الخطأ
+  Widget _buildFieldWithLabel({
+    required String label,
+    required TextEditingController controller,
+    required String hint,
+    required Function(String) onChanged,
+    TextInputType keyboard = TextInputType.text,
+    bool obscure = false,
+    Widget? suffixIcon,
+    String? errorText,
+    Widget? bottomWidget,
+  }) {
+    const Color borderColor = Color(0xFF00457C);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 14,
+            color: Colors.black54,
+          ),
+        ),
+        const SizedBox(height: 6),
+        _buildStyledField(
+          controller: controller,
+          hint: hint,
+          onChanged: onChanged,
+          keyboard: keyboard,
+          obscure: obscure,
+          suffixIcon: suffixIcon,
+        ),
+        if (errorText != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 5),
+            child: Text(
+              errorText,
+              style: const TextStyle(color: Colors.red, fontSize: 12),
+            ),
+          )
+        else if (bottomWidget != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 5),
+            child: bottomWidget,
+          ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    const Color borderColor = Color(0xFF00457C);
+    const Color buttonColor = Color(0xFF00457C);
+
     final allValid =
         isFirstValid &&
             isLastValid &&
             isPhoneValid &&
             isEmailValid &&
             isPassValid;
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        title: const Text(
-          'Create Account',
-          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
-        ),
         centerTitle: true,
+        title: const Text(
+          'Sign Up',
+          style: TextStyle(
+            color: borderColor,
+            fontSize: 22,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            const SizedBox(height: 5),
             const Text(
               "Please fill in the information below",
-              style: TextStyle(fontSize: 16, color: Color(0xFFB68645)),
+              style: TextStyle(
+                fontSize: 22,
+                color: borderColor,
+                fontWeight: FontWeight.bold,
+              ),
             ),
-            const SizedBox(height: 24),
-            // ========== TextFields ==========
-            TextField(
+            const SizedBox(height: 40),
+
+            // ==================== FIRST NAME ====================
+            _buildFieldWithLabel(
+              label: "First Name",
               controller: firstNameController,
-              decoration: InputDecoration(
-                labelText: "First Name",
-                border: const OutlineInputBorder(),
-                errorText: firstNameError,
-              ),
+              hint: "Enter your first name",
               onChanged: (_) => validateFirst(),
+              errorText: firstNameError,
             ),
             const SizedBox(height: 16),
-            TextField(
+
+            // ===================== LAST NAME =====================
+            _buildFieldWithLabel(
+              label: "Last Name",
               controller: lastNameController,
-              decoration: InputDecoration(
-                labelText: "Last Name",
-                border: const OutlineInputBorder(),
-                errorText: lastNameError,
-              ),
+              hint: "Enter your last name",
               onChanged: (_) => validateLast(),
+              errorText: lastNameError,
             ),
             const SizedBox(height: 16),
-            TextField(
+
+            // =================== PHONE NUMBER ===================
+            _buildFieldWithLabel(
+              label: "Phone Number",
               controller: phoneController,
-              keyboardType: TextInputType.phone,
-              decoration: InputDecoration(
-                labelText: "Phone Number",
-                border: const OutlineInputBorder(),
-                errorText: phoneError,
-              ),
+              hint: "Phone e.g. +9627XXXXXXXX",
+              keyboard: TextInputType.phone,
               onChanged: (_) => validatePhone(),
-            ),
-            const SizedBox(height: 12),
-            if (!isPhoneValid && phoneController.text.isNotEmpty)
-              const Text(
+              errorText: phoneError,
+              bottomWidget: (!isPhoneValid && phoneController.text.isNotEmpty)
+                  ? const Text(
                 "Phone number must start with +962",
-                style: TextStyle(fontSize: 13, color: Color(0xFFB68645)),
-              ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: emailController,
-              keyboardType: TextInputType.emailAddress,
-              decoration: InputDecoration(
-                labelText: "Email",
-                border: const OutlineInputBorder(),
-                errorText: emailError,
-              ),
-              onChanged: (_) => validateEmail(),
+                style: TextStyle(fontSize: 12, color: borderColor),
+              )
+                  : null,
             ),
             const SizedBox(height: 16),
-            TextField(
+
+            // ======================== EMAIL ========================
+            _buildFieldWithLabel(
+              label: "Email ID",
+              controller: emailController,
+              hint: "Email",
+              keyboard: TextInputType.emailAddress,
+              onChanged: (_) => validateEmail(),
+              errorText: emailError,
+            ),
+            const SizedBox(height: 16),
+
+            // ====================== PASSWORD FIELD =======================
+            _buildFieldWithLabel(
+              label: "Password",
               controller: passController,
-              obscureText: _obscurePassword,
-              decoration: InputDecoration(
-                labelText: "Password",
-                border: const OutlineInputBorder(),
-                errorText: passError,
-                suffixIcon: IconButton(
-                  onPressed: () {
-                    setState(() {
-                      _obscurePassword = !_obscurePassword;
-                    });
-                  },
-                  icon: Icon(
-                    _obscurePassword ? Icons.visibility_off : Icons.visibility,
-                  ),
+              hint: "Password",
+              obscure: _obscurePassword,
+              onChanged: (_) => validatePass(),
+              errorText: passError,
+              suffixIcon: IconButton(
+                onPressed: () {
+                  setState(() {
+                    _obscurePassword = !_obscurePassword;
+                  });
+                },
+                icon: Icon(
+                  _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                  color: borderColor,
                 ),
               ),
-              onChanged: (_) => validatePass(),
             ),
-            const SizedBox(height: 12),
+
+            const SizedBox(height: 8),
+
             const Text(
-              "Password must contain:"
-              "• At least 8 characters"
-              "• One uppercase letter"
-              "• One lowercase letter"
-              "• One number"
-              "• One special character (!@#\$&*~)",
-              style: TextStyle(fontSize: 13, color: Color(0xFFB68645)),
+              "Password must contain:\n"
+                  "- At least 8 characters\n"
+                  "- Uppercase (A-Z)\n"
+                  "- Lowercase (a-z)\n"
+                  "- Number (0-9)\n"
+                  "- Special character (!@#\$%^&*)",
+              style: TextStyle(fontSize: 12, color: borderColor, height: 1.4),
             ),
-            const SizedBox(height: 32),
-            // ========== Sign Up Button ==========
+
+            const SizedBox(height: 16),
+
+            // ==================== SIGN UP BUTTON ====================
             SizedBox(
               width: double.infinity,
+              height: 50,
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: allValid
-                      ? const Color(0xFFB68645)
-                      : Colors.grey,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  backgroundColor: allValid ? buttonColor : Colors.grey,
+                  elevation: allValid ? 3 : 0,
+                  shadowColor: borderColor.withOpacity(0.3),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(10),
                   ),
                 ),
                 onPressed: allValid ? _handleSignup : null,
                 child: const Text(
                   "Sign UP",
-                  style: TextStyle(fontSize: 16, color: Colors.white),
+                  style: TextStyle(fontSize: 17, color: Colors.white),
                 ),
               ),
+            ),
+
+
+            const SizedBox(height: 26),
+
+            // ----------------------------- LOGIN NAV -----------------------------
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Text(
+                  "Already have an account?",
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.black54,
+                  ),
+                ),
+                TextButton(
+                  onPressed: () {
+                    // افتراض أن LoginScreen موجودة في المسار الصحيح
+                    Navigator.pop(context); // العودة لشاشة الدخول (ClientHomePage)
+                  },
+                  child: const Text(
+                    "Login",
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: borderColor,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ],
         ),
@@ -773,16 +1068,20 @@ class _SignupScreenState extends State<SignupScreen> {
     );
   }
 }
+
 //verefay you email
 class VerifyEmailScreen extends StatefulWidget {
   final User user;
   const VerifyEmailScreen({Key? key, required this.user}) : super(key: key);
+
   @override
   State<VerifyEmailScreen> createState() => _VerifyEmailScreenState();
 }
+
 class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
   bool _isVerified = false;
   bool _isLoading = false;
+
   Future<void> _checkVerification() async {
     setState(() => _isLoading = true);
     await widget.user.reload();
@@ -811,6 +1110,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
       ).showSnackBar(const SnackBar(content: Text("Email not verified yet.")));
     }
   }
+
   Future<void> _resendEmail() async {
     try {
       await widget.user.sendEmailVerification();
@@ -823,6 +1123,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
       ).showSnackBar(SnackBar(content: Text("Error: ${e.toString()}")));
     }
   }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -841,25 +1142,25 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
               const Icon(
                 Icons.email_outlined,
                 size: 80,
-                color: Color(0xFFB68645),
+                color: Color(0xFF00457C),
               ),
               const SizedBox(height: 20),
               Text(
-                "A verification email has been sent to: \n${FirebaseAuth.instance.currentUser?.email ?? ''}",
+                "A verification email has been sent to:\n${FirebaseAuth.instance.currentUser?.email ?? ''}",
                 textAlign: TextAlign.center,
                 style: const TextStyle(fontSize: 16),
               ),
               const SizedBox(height: 20),
               const Text(
-                "Please check your inbox and click the verification link.After that, click the button below:",
-              textAlign: TextAlign.center,
+                "Please check your inbox and click the verification link.\nAfter that, click the button below:",
+                textAlign: TextAlign.center,
                 style: TextStyle(color: Colors.black54),
               ),
               const SizedBox(height: 30),
               ElevatedButton(
                 onPressed: _isLoading ? null : _checkVerification,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFB68645),
+                  backgroundColor: const Color(0xFF00457C),
                   padding: const EdgeInsets.symmetric(
                     horizontal: 40,
                     vertical: 14,
@@ -877,7 +1178,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
                 onPressed: _resendEmail,
                 child: const Text(
                   "Resend verification email",
-                  style: TextStyle(color: Color(0xFFB68645)),
+                  style: TextStyle(color: Color(0xFF00457C)),
                 ),
               ),
             ],
@@ -887,6 +1188,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
     );
   }
 }
+
 //-----------active home screen-----//
 class ActivityHomeScreen extends StatefulWidget {
   final String firstName;
@@ -903,6 +1205,7 @@ class ActivityHomeScreen extends StatefulWidget {
   @override
   State<ActivityHomeScreen> createState() => _ActivityHomeScreenState();
 }
+
 class _ActivityHomeScreenState extends State<ActivityHomeScreen> {
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
@@ -922,6 +1225,7 @@ class _ActivityHomeScreenState extends State<ActivityHomeScreen> {
     filteredActivities = activities;
     _searchController.addListener(_filterActivities);
   }
+
   void _filterActivities() {
     final query = _searchController.text.toLowerCase();
     setState(() {
@@ -930,18 +1234,20 @@ class _ActivityHomeScreenState extends State<ActivityHomeScreen> {
           .toList();
     });
   }
+
   @override
   void dispose() {
     _searchController.dispose();
     _searchFocusNode.dispose();
     super.dispose();
   }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: const Color(0xFFB68645),
+        backgroundColor: const Color(0xFF00457C),
         elevation: 0,
         title: const Text(
           "Services",
@@ -956,7 +1262,7 @@ class _ActivityHomeScreenState extends State<ActivityHomeScreen> {
           children: [
             Text(
               "Welcome, ${widget.firstName} ${widget.lastName}",
-              style: const TextStyle(fontSize: 18, color: Color(0xFFB68645)),
+              style: const TextStyle(fontSize: 18, color: Color(0xFF00457C)),
             ),
             const SizedBox(height: 12),
             TextField(
@@ -976,7 +1282,7 @@ class _ActivityHomeScreenState extends State<ActivityHomeScreen> {
             const SizedBox(height: 20),
             const Text(
               "Based On Your Activity",
-              style: TextStyle(fontSize: 16, color: Color(0xFFB68645)),
+              style: TextStyle(fontSize: 16, color: Color(0xFF00457C)),
             ),
             const SizedBox(height: 12),
             filteredActivities.isEmpty
@@ -1076,23 +1382,23 @@ class _ActivityHomeScreenState extends State<ActivityHomeScreen> {
         },
         items: const [
           BottomNavigationBarItem(
-            icon: Icon(Icons.notifications, color: Color(0xFFB68645)),
+            icon: Icon(Icons.notifications, color: Color(0xFF00457C)),
             label: "Notification",
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.search, color: Color(0xFFB68645)),
+            icon: Icon(Icons.search, color: Color(0xFF00457C)),
             label: "Search",
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.home_repair_service, color: Color(0xFFB68645)),
+            icon: Icon(Icons.home_repair_service, color: Color(0xFF00457C)),
             label: "Service",
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.message, color: Color(0xFFB68645)),
+            icon: Icon(Icons.message, color: Color(0xFF00457C)),
             label: "Inbox",
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.person, color: Color(0xFFB68645)),
+            icon: Icon(Icons.person, color: Color(0xFF00457C)),
             label: "Profile",
           ),
         ],
@@ -1100,11 +1406,13 @@ class _ActivityHomeScreenState extends State<ActivityHomeScreen> {
     );
   }
 }
+
 class HouseCleaningPage extends StatefulWidget {
   const HouseCleaningPage({Key? key}) : super(key: key);
   @override
   State<HouseCleaningPage> createState() => _HouseCleaningPageState();
 }
+
 Widget buildServiceCard({
   required String image,
   required String title,
@@ -1167,19 +1475,18 @@ Widget buildServiceCard({
                     ],
                   ),
                 ),
-                Flexible (child :ElevatedButton(
+                ElevatedButton(
                   onPressed: () {},
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Color(0xFFB68645),
-                    minimumSize: Size(90, 36),
+                    backgroundColor: Color(0xFF00457C),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
                   ),
-                  child: FittedBox(
-                    child: Text("Search pros", style: TextStyle(color: Colors.white)),
+                  child: Text(
+                    "Search pros",
+                    style: TextStyle(color: Colors.white),
                   ),
-                ),
                 ),
               ],
             ),
@@ -1200,6 +1507,7 @@ Widget buildServiceCard({
     ),
   );
 }
+
 class _HouseCleaningPageState extends State<HouseCleaningPage> {
   int _selectedIndex = 2; // نحدد إنه Service هو المختار
   @override
@@ -1208,7 +1516,7 @@ class _HouseCleaningPageState extends State<HouseCleaningPage> {
       appBar: AppBar(
         title: Text("Keep things clean", style: TextStyle(color: Colors.white)),
         centerTitle: true,
-        backgroundColor: Color(0xFFB68645),
+        backgroundColor: Color(0xFF00457C),
       ),
       body: SingleChildScrollView(
         padding: EdgeInsets.all(16),
@@ -1220,13 +1528,14 @@ class _HouseCleaningPageState extends State<HouseCleaningPage> {
               style: TextStyle(fontSize: 14, color: Colors.black87),
             ),
             SizedBox(height: 20),
+
             /// Section 1
             Text(
               "Start with the basics",
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
-                color: Color(0xFFB68645),
+                color: Color(0xFF00457C),
               ),
             ),
             SizedBox(height: 10),
@@ -1258,6 +1567,7 @@ class _HouseCleaningPageState extends State<HouseCleaningPage> {
               info: "",
             ),
             SizedBox(height: 20),
+
             /// Section 2
             Text(
               "Really get in there",
@@ -1303,23 +1613,23 @@ class _HouseCleaningPageState extends State<HouseCleaningPage> {
         },
         items: const [
           BottomNavigationBarItem(
-            icon: Icon(Icons.notifications, color: Color(0xFFB68645)),
+            icon: Icon(Icons.notifications, color: Color(0xFF00457C)),
             label: "Notification",
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.search, color: Color(0xFFB68645)),
+            icon: Icon(Icons.search, color: Color(0xFF00457C)),
             label: "Search",
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.home_repair_service, color: Color(0xFFB68645)),
+            icon: Icon(Icons.home_repair_service, color: Color(0xFF00457C)),
             label: "Service",
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.message, color: Color(0xFFB68645)),
+            icon: Icon(Icons.message, color: Color(0xFF00457C)),
             label: "Message",
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.person, color: Color(0xFFB68645)),
+            icon: Icon(Icons.person, color: Color(0xFF00457C)),
             label: "Profile",
           ),
         ],
@@ -1327,15 +1637,18 @@ class _HouseCleaningPageState extends State<HouseCleaningPage> {
     );
   }
 }
+
 //------- اذا كبس على hose cleaning من جوا ---//
 class HouseCleaningProsPage extends StatelessWidget {
   const HouseCleaningProsPage({Key? key}) : super(key: key);
+
   @override
   Widget build(BuildContext context) {
     // جلب بيانات السيرفس بروفايدر من فايربيس
     final providersStream = FirebaseFirestore.instance
         .collection('service_providers')
         .snapshots();
+
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.white,
@@ -1371,20 +1684,22 @@ class HouseCleaningProsPage extends StatelessWidget {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
+
           if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
             return const Center(child: Text("No providers found"));
           }
+
           final providers = snapshot.data!.docs;
+
           return ListView.builder(
             padding: const EdgeInsets.all(16),
             itemCount: providers.length,
             itemBuilder: (context, index) {
               final data = providers[index].data() as Map<String, dynamic>;
+
               final name =
                   "${data['firstName'] ?? ''} ${data['lastName'] ?? ''}";
-              final rating = (data['rating'] is int)
-                  ? (data['rating'] as int).toDouble()
-                  : (data['rating'] ?? 4.5);
+              final rating = (data['rating'] ?? 4.5).toDouble();
               final reviews = data['reviews'] ?? 10;
               final desc =
                   data['description'] ??
@@ -1392,6 +1707,7 @@ class HouseCleaningProsPage extends StatelessWidget {
               final imageUrl =
                   data['imageUrl'] ??
                       "https://via.placeholder.com/150"; // صورة افتراضية لو مش موجودة
+
               return Card(
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -1471,6 +1787,7 @@ class HouseCleaningProsPage extends StatelessWidget {
                                       providerId: providers[index].id,
                                       serviceName: "House Cleaning",
                                       price: 70.0, // يمكنك جعله ديناميكي من الـ Firestore
+
                                     ),
                                   ),
                                 );
@@ -1494,23 +1811,25 @@ class HouseCleaningProsPage extends StatelessWidget {
     );
   }
 }
+
 //-------في حال كبس على read more ------//
+
 class CleanerDetailsPage extends StatelessWidget {
   final String name;
   final String image;
-  final String locationLink; // الرابط من Firebase
   final String providerId;   // ✅ جديد
   final String serviceName; // ✅ جديد
   final double price;       // ✅ جديد
+  final String locationLink; // الرابط من Firebase
 
   const CleanerDetailsPage({
     Key? key,
     required this.name,
     required this.image,
-    required this.locationLink,
     required this.providerId,
     required this.serviceName,
     required this.price,
+    required this.locationLink,
   }) : super(key: key);
 
   // دالة لفتح Google Maps
@@ -1529,7 +1848,7 @@ class CleanerDetailsPage extends StatelessWidget {
       backgroundColor: Colors.grey[100],
       appBar: AppBar(
         title: Text(name, style: const TextStyle(color: Colors.white)),
-        backgroundColor: const Color(0xFFB68645),
+        backgroundColor: const Color(0xFF00457C),
         centerTitle: true,
       ),
       body: SingleChildScrollView(
@@ -1537,154 +1856,156 @@ class CleanerDetailsPage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-          /// Profile section
-          Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            CircleAvatar(radius: 35, backgroundImage: NetworkImage(image)),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    name,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  const Text(
-                    "🟢 Online Now · Responds within a day",
-                    style: TextStyle(fontSize: 13, color: Colors.green),
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
+            /// Profile section
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                CircleAvatar(radius: 35, backgroundImage: NetworkImage(image)),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        "JOD 70 ",
-                        style: TextStyle(
-                          fontSize: 15,
+                      Text(
+                        name,
+                        style: const TextStyle(
+                          fontSize: 18,
                           fontWeight: FontWeight.bold,
-                          color: Colors.black87,
                         ),
                       ),
+                      const SizedBox(height: 4),
                       const Text(
-                        "Starting Price",
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Colors.black54,
+                        "🟢 Online Now · Responds within a day",
+                        style: TextStyle(fontSize: 13, color: Colors.green),
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          const Text(
+                            "JOD 70 ",
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black87,
+                            ),
+                          ),
+                          const Text(
+                            "Starting Price",
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.black54,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      // زر الموقع
+                      GestureDetector(
+                        onTap: () => _openMap(locationLink),
+                        child: Row(
+                          children: const [
+                            Icon(Icons.location_on, color: Colors.blue),
+                            SizedBox(width: 4),
+                            Text(
+                              "Location",
+                              style: TextStyle(
+                                color: Colors.blue,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      // ✅ زر Book Now (بعد أن نرى كل المعلومات)
+                      const SizedBox(height: 32),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFB68645),
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => PaymentMethodSelection(
+                                  serviceName: serviceName,
+                                  providerId: providerId,
+                                  price: price,
+                                ),
+                              ),
+                            );
+                          },
+                          child: const Text(
+                            "✅ Book Now — Pay Securely",
+                            style: TextStyle(fontSize: 16, color: Colors.white),
+                          ),
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 6),
-                  // زر الموقع
-                  GestureDetector(
-                    onTap: () => _openMap(locationLink),
-                    child: Row(
-                      children: const [
-                        Icon(Icons.location_on, color: Colors.blue),
-                        SizedBox(width: 4),
-                        Text(
-                          "Location",
-                          style: TextStyle(
-                            color: Colors.blue,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 16),
+
+            /// باقي الصفحة كما هي...
+            const Text(
+              "About This Pro",
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 6),
+            const Text(
+              "I do the best work for a decent price. I have a heart for helping people.",
+              style: TextStyle(fontSize: 14, color: Colors.black87),
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              "Overview",
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 6),
+            const Text(
+              "Hired 10 times\nServes Zarqa\nBackground checked",
+              style: TextStyle(fontSize: 14, color: Colors.black87),
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              "Business hours",
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 6),
+            const Text(
+              "This pro hasn’t listed their business hours.",
+              style: TextStyle(fontSize: 14, color: Colors.black87),
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              "Payment methods",
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 6),
+            const Text(
+              "This pro accepts payments via Cash, Zain Cash, and Bank transfer.",
+              style: TextStyle(fontSize: 14, color: Colors.black87),
             ),
           ],
         ),
-        const SizedBox(height: 16),
-        /// باقي الصفحة كما هي...
-        const Text(
-          "About This Pro",
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 6),
-        const Text(
-          "I do the best work for a decent price. I have a heart for helping people.",
-          style: TextStyle(fontSize: 14, color: Colors.black87),
-        ),
-        const SizedBox(height: 20),
-        const Text(
-          "Overview",
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 6),
-        const Text(
-            """
-Hired 10 times \n Serves Zarqa \n Background checked""",
-        style: TextStyle(fontSize: 14, color: Colors.black87),
       ),
-      const SizedBox(height: 20),
-      const Text(
-        "Business hours",
-        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-      ),
-      const SizedBox(height: 6),
-      const Text(
-        "This pro hasn’t listed their business hours.",
-        style: TextStyle(fontSize: 14, color: Colors.black87),
-      ),
-      const SizedBox(height: 20),
-      const Text(
-        "Payment methods",
-        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-      ),
-      const SizedBox(height: 6),
-      const Text(
-        "This pro accepts payments via Cash, Zain Cash, and Bank transfer.",
-        style: TextStyle(fontSize: 14, color: Colors.black87),
-      ),
-
-      // ✅ زر Book Now (بعد أن نرى كل المعلومات)
-      const SizedBox(height: 32),
-      SizedBox(
-        width: double.infinity,
-        child: ElevatedButton(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFFB68645),
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          ),
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => PaymentMethodSelection(
-                  serviceName: serviceName,
-                  providerId: providerId,
-                  price: price,
-                ),
-              ),
-            );
-          },
-          child: const Text(
-            "✅ Book Now — Pay Securely",
-            style: TextStyle(fontSize: 16, color: Colors.white),
-          ),
-        ),
-      ),
-      ],
-    ),
-    ),
     );
   }
 }
+
 // ---------------- Client Chat List Screen ---------------- //
 class ClientChatListScreen extends StatelessWidget {
   const ClientChatListScreen({super.key});
   @override
   Widget build(BuildContext context) {
-    const Color primaryColor = Color(0xFFB68645);
+    const Color primaryColor = Color(0xFF00457C);
     return Scaffold(
       appBar: AppBar(
         title: const Text(
@@ -1723,7 +2044,7 @@ class ClientChatListScreen extends StatelessWidget {
                   ),
                   title: Text(fullName.isEmpty ? 'Unknown Provider' : fullName),
                   subtitle: Text(email),
-                  trailing: const Icon(Icons.chat, color: Color(0xFFB68645)),
+                  trailing: const Icon(Icons.chat, color: Color(0xFF00457C)),
                   onTap: () {
                     final currentUser = FirebaseAuth.instance.currentUser;
                     final currentUserId = currentUser?.uid ?? '';
@@ -1747,34 +2068,43 @@ class ClientChatListScreen extends StatelessWidget {
     );
   }
 }
+
 // ✅ Chat Screen
 class ClientChatScreen extends StatefulWidget {
   final String clientId;
   final String providerId;
   final String providerName;
+
   const ClientChatScreen({
     super.key,
+
     required this.clientId,
     required this.providerId,
     required this.providerName,
   });
+
   @override
   State<ClientChatScreen> createState() => _ClientChatScreenState();
 }
+
 class _ClientChatScreenState extends State<ClientChatScreen> {
   final TextEditingController _messageController = TextEditingController();
   late String chatId;
+
   @override
   void initState() {
     super.initState();
+
     // ✅ نفس منطق السيرفس بروفايدر
     chatId = widget.clientId.compareTo(widget.providerId) < 0
         ? "${widget.clientId}_${widget.providerId}"
         : "${widget.providerId}_${widget.clientId}";
   }
+
   Future<void> _sendMessage() async {
     final text = _messageController.text.trim();
     if (text.isEmpty) return;
+
     final msgData = {
       'senderId': widget.clientId,
       'receiverId': widget.providerId,
@@ -1782,20 +2112,26 @@ class _ClientChatScreenState extends State<ClientChatScreen> {
       'timestamp': FieldValue.serverTimestamp(),
       'isRead': false,
     };
+
     final chatRef = FirebaseFirestore.instance.collection('chats').doc(chatId);
+
     // ✅ إنشاء أو تحديث الدردشة الأساسية
     await chatRef.set({
       'participants': [widget.clientId, widget.providerId],
       'lastMessage': text,
       'lastMessageTime': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
+
     // ✅ إضافة الرسالة للمحادثة
     await chatRef.collection('messages').add(msgData);
+
     _messageController.clear();
   }
+
   @override
   Widget build(BuildContext context) {
-    const Color primaryColor = Color(0xFFB68645);
+    const Color primaryColor = Color(0xFF00457C);
+
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.providerName),
@@ -1821,13 +2157,17 @@ class _ClientChatScreenState extends State<ClientChatScreen> {
                     ),
                   );
                 }
+
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());
                 }
+
                 if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
                   return const Center(child: Text('No messages yet.'));
                 }
+
                 final messages = snapshot.data!.docs;
+
                 // ✅ نحدّث حالة القراءة
                 for (var doc in messages) {
                   final data = doc.data() as Map<String, dynamic>;
@@ -1836,12 +2176,14 @@ class _ClientChatScreenState extends State<ClientChatScreen> {
                     doc.reference.update({'isRead': true});
                   }
                 }
+
                 return ListView.builder(
                   padding: const EdgeInsets.all(12),
                   itemCount: messages.length,
                   itemBuilder: (context, index) {
                     final msg = messages[index].data() as Map<String, dynamic>;
                     final isClient = msg['senderId'] == widget.clientId;
+
                     final time = msg['timestamp'] != null
                         ? (msg['timestamp'] as Timestamp)
                         .toDate()
@@ -1849,6 +2191,7 @@ class _ClientChatScreenState extends State<ClientChatScreen> {
                         .toString()
                         .substring(11, 16)
                         : '';
+
                     return Align(
                       alignment: isClient
                           ? Alignment.centerRight
@@ -1893,6 +2236,7 @@ class _ClientChatScreenState extends State<ClientChatScreen> {
               },
             ),
           ),
+
           // ✅ مربع الإرسال
           Padding(
             padding: const EdgeInsets.all(12),
@@ -1922,23 +2266,28 @@ class _ClientChatScreenState extends State<ClientChatScreen> {
     );
   }
 }
+
 //---------- profile screen ----------//
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({Key? key}) : super(key: key);
+
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
 }
+
 class _ProfileScreenState extends State<ProfileScreen> {
   String firstName = '';
   String lastName = '';
   String email = '';
   String phone = '';
   bool isLoading = true;
+
   @override
   void initState() {
     super.initState();
     _loadUserData();
   }
+
   // تحميل بيانات المستخدم من Firestore
   Future<void> _loadUserData() async {
     try {
@@ -1948,6 +2297,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             .collection('clients') // اسم الكولكشن تبع المستخدمين
             .doc(user.uid)
             .get();
+
         if (doc.exists) {
           setState(() {
             firstName = doc['firstName'] ?? '';
@@ -1969,9 +2319,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
       });
     }
   }
+
   @override
   Widget build(BuildContext context) {
-    const primaryColor = Color(0xFFB68645);
+    const primaryColor = Color(0xFF00457C);
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -2002,30 +2354,35 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
             ),
             const SizedBox(height: 16),
+
             // الاسم الكامل
             Text(
               "$firstName $lastName",
               style: const TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
-                color: Color(0xFFB68645),
+                color: Color(0xFF00457C),
               ),
             ),
             const SizedBox(height: 8),
+
             // البريد الإلكتروني
             Text(
               email,
               style: const TextStyle(fontSize: 16, color: Colors.black54),
             ),
             const SizedBox(height: 4),
+
             // رقم الهاتف
             Text(
               phone,
               style: const TextStyle(fontSize: 16, color: Colors.black54),
             ),
             const SizedBox(height: 24),
+
             const Divider(thickness: 1),
             const SizedBox(height: 12),
+
             // زر تعديل الملف الشخصي
             _buildSettingTile(
               Icons.edit,
@@ -2053,6 +2410,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 }
               },
             ),
+
             // تغيير كلمة المرور
             _buildSettingTile(
               Icons.lock,
@@ -2067,6 +2425,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 );
               },
             ),
+
             // الإشعارات
             _buildSettingTile(
               Icons.notifications,
@@ -2074,6 +2433,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               primaryColor,
                   () {},
             ),
+
             // المساعدة والدعم
             _buildSettingTile(
               Icons.help_outline,
@@ -2081,6 +2441,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               primaryColor,
                   () {},
             ),
+
             // تسجيل الخروج
             _buildSettingTile(
               Icons.logout,
@@ -2102,6 +2463,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
     );
   }
+
   // عنصر إعداد (Tile)
   Widget _buildSettingTile(
       IconData icon,
@@ -2131,12 +2493,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 }
+
 // ====================== Edit Profile Screen ======================
+
 class EditProfileScreen extends StatefulWidget {
   final String firstName;
   final String lastName;
   final String email;
   final String phone;
+
   const EditProfileScreen({
     Key? key,
     required this.firstName,
@@ -2144,15 +2509,19 @@ class EditProfileScreen extends StatefulWidget {
     required this.email,
     required this.phone,
   }) : super(key: key);
+
   @override
   State<EditProfileScreen> createState() => _EditProfileScreenState();
 }
+
 class _EditProfileScreenState extends State<EditProfileScreen> {
   late TextEditingController firstNameController;
   late TextEditingController lastNameController;
   late TextEditingController emailController;
   late TextEditingController phoneController;
+
   bool isLoading = false;
+
   @override
   void initState() {
     super.initState();
@@ -2161,6 +2530,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     emailController = TextEditingController(text: widget.email);
     phoneController = TextEditingController(text: widget.phone);
   }
+
   @override
   void dispose() {
     firstNameController.dispose();
@@ -2169,22 +2539,27 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     phoneController.dispose();
     super.dispose();
   }
+
   Future<void> _updateUserData() async {
     try {
       setState(() => isLoading = true);
+
       final uid = FirebaseAuth.instance.currentUser?.uid;
       if (uid == null) {
         throw Exception("User not logged in");
       }
+
       await FirebaseFirestore.instance.collection('clients').doc(uid).update({
         'firstName': firstNameController.text.trim(),
         'lastName': lastNameController.text.trim(),
         'email': emailController.text.trim(),
         'phone': phoneController.text.trim(),
       });
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Profile updated successfully")),
       );
+
       Navigator.pop(context); // يرجع للشاشة السابقة بعد التحديث
     } catch (e) {
       ScaffoldMessenger.of(
@@ -2194,9 +2569,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       setState(() => isLoading = false);
     }
   }
+
   @override
   Widget build(BuildContext context) {
-    const primaryColor = Color(0xFFB68645);
+    const primaryColor = Color(0xFF00457C);
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -2269,12 +2645,14 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     );
   }
 }
+
 // ====================== Change Password Screen ======================
 class ChangePasswordScreen extends StatefulWidget {
   const ChangePasswordScreen({Key? key}) : super(key: key);
   @override
   State<ChangePasswordScreen> createState() => _ChangePasswordScreenState();
 }
+
 class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
   bool _obscureCurrent = true;
   bool _obscureNew = true;
@@ -2290,6 +2668,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
     confirmController.dispose();
     super.dispose();
   }
+
   bool get isPasswordValid {
     final pass = newController.text;
     final lengthOK = pass.length >= 8;
@@ -2299,6 +2678,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
     final specialOK = RegExp(r'[!@#\$&*~]').hasMatch(pass);
     return lengthOK && numberOK && upperOK && lowerOK && specialOK;
   }
+
   // ✅ دالة للتحقق من التطابق
   bool get isConfirmMatching =>
       confirmController.text.isNotEmpty &&
@@ -2306,7 +2686,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
           confirmController.text == newController.text;
   @override
   Widget build(BuildContext context) {
-    const primaryColor = Color(0xFFB68645);
+    const primaryColor = Color(0xFF00457C);
     return Scaffold(
       appBar: AppBar(
         backgroundColor: primaryColor,
@@ -2423,7 +2803,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                         content: Text(
                           "Password changed successfully (Front-end only)",
                         ),
-                        backgroundColor: Color(0xFFB68645),
+                        backgroundColor: Color(0xFF00457C),
                       ),
                     );
                     Navigator.pop(context);
