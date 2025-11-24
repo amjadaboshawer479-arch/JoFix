@@ -39,7 +39,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    const Color brown = Color(0xFFB68645);
+    const Color brown = Color(0xFF00457C);
     return Scaffold(
       appBar: AppBar(
         backgroundColor: brown,
@@ -97,7 +97,7 @@ class AdminDashboard extends StatelessWidget {
   const AdminDashboard({super.key});
   @override
   Widget build(BuildContext context) {
-    const Color brown = Color(0xFFB68645);
+    const Color brown = Color(0xFF00457C);
     return Scaffold(
       appBar: AppBar(
         backgroundColor: brown,
@@ -115,13 +115,13 @@ class AdminDashboard extends StatelessWidget {
             style: TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.bold,
-              color: Color(0xFFB68645),
+              color: Color(0xFF00457C),
             ),
           ),
           const SizedBox(height: 16),
           Card(
             child: ListTile(
-              leading: const Icon(Icons.people, color: Color(0xFFB68645)),
+              leading: const Icon(Icons.people, color: Color(0xFF00457C)),
               title: const Text("Manage Users"),
               onTap: () {
                 Navigator.push(
@@ -137,7 +137,7 @@ class AdminDashboard extends StatelessWidget {
             child: ListTile(
               leading: const Icon(
                 Icons.miscellaneous_services,
-                color: Color(0xFFB68645),
+                color: Color(0xFF00457C),
               ),
               title: const Text("Manage Services"),
               onTap: () {
@@ -152,7 +152,7 @@ class AdminDashboard extends StatelessWidget {
           ),
           Card(
             child: ListTile(
-              leading: const Icon(Icons.article, color: Color(0xFFB68645)),
+              leading: const Icon(Icons.article, color: Color(0xFF00457C)),
               title: const Text("Manage Posts"),
               onTap: () {
                 Navigator.push(
@@ -190,7 +190,7 @@ class ManageUsersPage extends StatefulWidget {
 }
 
 class _ManageUsersPageState extends State<ManageUsersPage> {
-  final Color primaryColor = const Color(0xFFB68645);
+  final Color primaryColor = const Color(0xFF00457C);
   List<Map<String, String>> allUsers = [
     {
       "firstName": "Ahmad",
@@ -455,7 +455,7 @@ class _EditUserScreenState extends State<EditUserScreen> {
 
   @override
   Widget build(BuildContext context) {
-    const primaryColor = Color(0xFFB68645);
+    const primaryColor = Color(0xFF00457C);
     return Scaffold(
       appBar: AppBar(
         backgroundColor: primaryColor,
@@ -524,7 +524,7 @@ class ManageServicesScreen extends StatefulWidget {
 }
 
 class _ManageServicesScreenState extends State<ManageServicesScreen> {
-  static const primaryColor = Color(0xFFB68645);
+  static const primaryColor = Color(0xFF00457C);
   List<Map<String, dynamic>> services = [
     {
       "name": "House Cleaning",
@@ -721,7 +721,7 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
             TextField(
               decoration: InputDecoration(
                 hintText: "Search services...",
-                prefixIcon: const Icon(Icons.search, color: Color(0xFFB68645)),
+                prefixIcon: const Icon(Icons.search, color: Color(0xFF00457C)),
                 filled: true,
                 fillColor: Colors.grey.shade200,
                 border: OutlineInputBorder(
@@ -800,7 +800,7 @@ class ManagePostsScreen extends StatefulWidget {
 }
 
 class _ManagePostsScreenState extends State<ManagePostsScreen> {
-  final Color primaryColor = const Color(0xFFB68645);
+  final Color primaryColor = const Color(0xFF00457C);
   List<Map<String, dynamic>> posts = [
     {
       "title": "Cleaning Tips",
@@ -991,7 +991,7 @@ class _ManagePostsScreenState extends State<ManagePostsScreen> {
             child: TextField(
               decoration: InputDecoration(
                 hintText: "Search posts...",
-                prefixIcon: const Icon(Icons.search, color: Color(0xFFB68645)),
+                prefixIcon: const Icon(Icons.search, color: Color(0xFF00457C)),
                 filled: true,
                 fillColor: Colors.grey[200],
                 border: OutlineInputBorder(
@@ -1054,7 +1054,7 @@ class _ManagePostsScreenState extends State<ManagePostsScreen> {
                                 IconButton(
                                   icon: const Icon(
                                     Icons.edit,
-                                    color: Color(0xFFB68645),
+                                    color: Color(0xFF00457C),
                                   ),
                                   onPressed: () =>
                                       _showPostDialog(post: post, index: index),

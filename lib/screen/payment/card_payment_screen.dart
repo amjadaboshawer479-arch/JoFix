@@ -72,7 +72,7 @@ class _CardPaymentScreenState extends State<CardPaymentScreen> {
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-            Container(width: 80, height: 80, decoration: BoxDecoration(color: const Color(0xFFB68645), borderRadius: BorderRadius.circular(20)), child: const Icon(Icons.credit_card, color: Colors.white, size: 40)),
+            Container(width: 80, height: 80, decoration: BoxDecoration(color: const Color(0xFF00457C), borderRadius: BorderRadius.circular(20)), child: const Icon(Icons.credit_card, color: Colors.white, size: 40)),
             const SizedBox(height: 20),
             const Text('Secure Card Payment', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
@@ -94,7 +94,7 @@ class _CardPaymentScreenState extends State<CardPaymentScreen> {
               width: double.infinity,
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFB68645),
+                  backgroundColor: const Color(0xFF00457C),
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),

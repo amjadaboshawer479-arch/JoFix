@@ -56,7 +56,7 @@ class CashPaymentScreen extends StatelessWidget {
         padding: const EdgeInsets.all(24),
         child: Column(
           children: [
-            Container(width: 80, height: 80, decoration: BoxDecoration(color: const Color(0xFFB68645), borderRadius: BorderRadius.circular(20)), child: const Icon(Icons.money, color: Colors.white, size: 40)),
+            Container(width: 80, height: 80, decoration: BoxDecoration(color: const Color(0xFF00457C), borderRadius: BorderRadius.circular(20)), child: const Icon(Icons.money, color: Colors.white, size: 40)),
             const SizedBox(height: 20),
             const Text('Cash Payment', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
@@ -67,14 +67,14 @@ class CashPaymentScreen extends StatelessWidget {
               '✅ No extra fees',
               '✅ Receipt provided',
             ]
-                .map((text) => Row(children: [const Icon(Icons.check_circle, color: Color(0xFFB68645)), const SizedBox(width: 10), Text(text)]))
+                .map((text) => Row(children: [const Icon(Icons.check_circle, color: Color(0xFF00457C)), const SizedBox(width: 10), Text(text)]))
                 .toList(),
             const Spacer(),
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFB68645),
+                  backgroundColor: const Color(0xFF00457C),
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),

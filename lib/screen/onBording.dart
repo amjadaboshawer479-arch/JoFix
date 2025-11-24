@@ -70,7 +70,7 @@ class _TravelloOnboardingState extends State<TravelloOnboarding> {
                   Row(
                     children: List.generate(
                       onboardingData.length,
-                      (dotIndex) => AnimatedContainer(
+                          (dotIndex) => AnimatedContainer(
                         duration: const Duration(milliseconds: 300),
                         margin: const EdgeInsets.symmetric(horizontal: 3),
                         height: 6,
@@ -90,7 +90,7 @@ class _TravelloOnboardingState extends State<TravelloOnboarding> {
                       if (_currentIndex == onboardingData.length - 1) {
                         ScaffoldMessenger.of(
                           context,
-                        ).showSnackBar(const SnackBar(content: Text('')));
+                        );
                         Navigator.pushReplacement(
                           context,
                           MaterialPageRoute(
@@ -117,17 +117,17 @@ class _TravelloOnboardingState extends State<TravelloOnboarding> {
                       child: Center(
                         child: _currentIndex == onboardingData.length - 1
                             ? const Text(
-                                "Get Started",
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              )
+                          "Get Started",
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        )
                             : const Icon(
-                                Icons.arrow_forward,
-                                color: Colors.white,
-                              ),
+                          Icons.arrow_forward,
+                          color: Colors.white,
+                        ),
                       ),
                     ),
                   ),

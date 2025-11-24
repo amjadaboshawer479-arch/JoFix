@@ -18,7 +18,7 @@ class PaymentMethodSelection extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: const Color(0xFFB68645),
+        backgroundColor: const Color(0xFF00457C),
         title: const Text('Payment', style: TextStyle(color: Colors.white)),
         centerTitle: true,
       ),
@@ -71,7 +71,7 @@ class PaymentMethodSelection extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Container(width: 50, height: 50, decoration: BoxDecoration(color: const Color(0xFFB68645).withOpacity(0.1), borderRadius: BorderRadius.circular(10)), child: Icon(icon, color: const Color(0xFFB68645))),
+            Container(width: 50, height: 50, decoration: BoxDecoration(color: const Color(0xFF00457C).withOpacity(0.1), borderRadius: BorderRadius.circular(10)), child: Icon(icon, color: const Color(0xFF00457C))),
             const SizedBox(width: 16),
             Expanded(
               child: Column(
