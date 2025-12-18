@@ -27,24 +27,58 @@ class PaymentMethodSelection extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Booking **$serviceName**', style: const TextStyle(fontSize: 16)),
-            Text('Total: JOD ${price.toStringAsFixed(2)}', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.green)),
+            Text(
+              'Booking **$serviceName**',
+              style: const TextStyle(fontSize: 16),
+            ),
+            Text(
+              'Total: JOD ${price.toStringAsFixed(2)}',
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.green,
+              ),
+            ),
             const SizedBox(height: 24),
 
-            _buildPaymentOption(context, icon: Icons.account_balance_wallet_outlined, title: 'Cash Payment', subtitle: 'Pay after service completion', onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => CashPaymentScreen(serviceName: serviceName, providerId: providerId, price: price)),
-              );
-            }),
+            _buildPaymentOption(
+              context,
+              icon: Icons.account_balance_wallet_outlined,
+              title: 'Cash Payment',
+              subtitle: 'Pay after service completion',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => CashPaymentScreen(
+                      serviceName: serviceName,
+                      providerId: providerId,
+                      price: price,
+                    ),
+                  ),
+                );
+              },
+            ),
             const SizedBox(height: 16),
 
-            _buildPaymentOption(context, icon: Icons.credit_card_outlined, title: 'Credit/Debit Card', subtitle: 'Secure payment via card', onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => CardPaymentScreen(serviceName: serviceName, providerId: providerId, price: price)),
-              );
-            }),
+            _buildPaymentOption(
+              context,
+              icon: Icons.credit_card_outlined,
+              title: 'Credit/Debit Card',
+              subtitle: 'Secure payment via card',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => CardPaymentScreen(
+                      serviceName: serviceName,
+                      providerId: providerId,
+                      price: price,
+                    ),
+                  ),
+                );
+              },
+            ),
 
             const Spacer(),
             _buildSecurityNote(),
@@ -71,15 +105,32 @@ class PaymentMethodSelection extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Container(width: 50, height: 50, decoration: BoxDecoration(color: const Color(0xFF00457C).withOpacity(0.1), borderRadius: BorderRadius.circular(10)), child: Icon(icon, color: const Color(0xFF00457C))),
+            Container(
+              width: 50,
+              height: 50,
+              decoration: BoxDecoration(
+                color: const Color(0xFF00457C).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, color: const Color(0xFF00457C)),
+            ),
             const SizedBox(width: 16),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                   const SizedBox(height: 4),
-                  Text(subtitle, style: const TextStyle(fontSize: 14, color: Colors.grey)),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(fontSize: 14, color: Colors.grey),
+                  ),
                 ],
               ),
             ),
@@ -96,7 +147,10 @@ class PaymentMethodSelection extends StatelessWidget {
       children: [
         const Icon(Icons.lock, size: 14, color: Colors.grey),
         const SizedBox(width: 6),
-        Text('Secure & encrypted payment', style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+        Text(
+          'Secure & encrypted payment',
+          style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+        ),
       ],
     );
   }

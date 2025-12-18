@@ -1,5 +1,3 @@
-// ✅ تم تعديل هذا الملف فقط — لربطه بصفحات الدفع الجديدة في lib/screen/payment/
-
 import 'package:amjad/screen/payment/payment_method_selection.dart';
 import 'package:flutter/material.dart';
 import 'package:amjad/screen/login_screen.dart';
@@ -10,8 +8,7 @@ import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-
-// ------------------- Client Home Page ------------------- //
+//-------------------Client Home Page-------------------//
 class ClientHomePage extends StatefulWidget {
   const ClientHomePage({super.key});
   @override
@@ -26,8 +23,7 @@ class _ClientHomePageState extends State<ClientHomePage> {
   bool isEmailValid = false;
   bool isPasswordValid = false;
   bool isPasswordVisible = false;
-  String? loginError; // 🔥 متغير لعرض الخطأ تحت الحقول
-
+  String? loginError;
   // Phone validation
   void _checkPhone(String value) {
     setState(() {
@@ -55,50 +51,41 @@ class _ClientHomePageState extends State<ClientHomePage> {
     });
   }
 
-  // 🔥 تسجيل الدخول بالبريد وكلمة السر
+  // login with email and pass
   Future<void> _loginClient() async {
     final email = emailController.text.trim();
     final password = passwordController.text.trim();
     final phone = phoneController.text.trim();
-
     setState(() {
       loginError = null;
     });
-
     try {
       final auth = FirebaseAuth.instance;
       final cred = await auth.signInWithEmailAndPassword(
         email: email,
         password: password,
       );
-
       final uid = cred.user?.uid;
       if (uid == null) throw Exception("User ID not found");
-
       final firestore = FirebaseFirestore.instance;
       final doc = await firestore.collection('clients').doc(uid).get();
-
       if (!doc.exists) {
         setState(() {
           loginError = "User not found in Firestore.";
         });
         return;
       }
-
       final data = doc.data()!;
       final storedPhone = (data['phone'] ?? '') as String;
-
       if (storedPhone.isNotEmpty && storedPhone != phone) {
         setState(() {
           loginError = "Phone number doesn't match our records.";
         });
         return;
       }
-
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text("Login successful!")));
-
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => const ActivityHomeScreen()),
@@ -119,8 +106,7 @@ class _ClientHomePageState extends State<ClientHomePage> {
       });
     }
   }
-
-  // 🔥 تسجيل الدخول بالفيسبوك
+  //login with facebook
   Future<void> _loginWithFacebook() async {
     try {
       final result = await FacebookAuth.instance.login();
@@ -130,25 +116,20 @@ class _ClientHomePageState extends State<ClientHomePage> {
         );
         return;
       }
-
       final accessToken = result.accessToken!;
       final credential = FacebookAuthProvider.credential(accessToken.token);
-
       final userCredential = await FirebaseAuth.instance.signInWithCredential(
         credential,
       );
 
       final user = userCredential.user;
       if (user == null) throw Exception("User not found");
-
       final uid = user.uid;
       final email = user.email ?? "";
       final displayName = user.displayName ?? "";
       final phone = "";
-
       final docRef = FirebaseFirestore.instance.collection("clients").doc(uid);
       final doc = await docRef.get();
-
       if (!doc.exists) {
         await docRef.set({
           "uid": uid,
@@ -158,7 +139,6 @@ class _ClientHomePageState extends State<ClientHomePage> {
           "createdAt": FieldValue.serverTimestamp(),
         });
       }
-
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => const ActivityHomeScreen()),
@@ -175,28 +155,22 @@ class _ClientHomePageState extends State<ClientHomePage> {
     try {
       final googleUser = await GoogleSignIn().signIn();
       if (googleUser == null) return;
-
       final googleAuth = await googleUser.authentication;
       final credential = GoogleAuthProvider.credential(
         accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
       );
-
       final userCredential = await FirebaseAuth.instance.signInWithCredential(
         credential,
       );
-
       final user = userCredential.user;
       if (user == null) throw Exception("User not found");
-
       final uid = user.uid;
       final email = user.email ?? "";
       final displayName = user.displayName ?? "";
       final phone = "";
-
       final docRef = FirebaseFirestore.instance.collection("clients").doc(uid);
       final doc = await docRef.get();
-
       if (!doc.exists) {
         await docRef.set({
           "uid": uid,
@@ -206,7 +180,6 @@ class _ClientHomePageState extends State<ClientHomePage> {
           "createdAt": FieldValue.serverTimestamp(),
         });
       }
-
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => const ActivityHomeScreen()),
@@ -222,9 +195,7 @@ class _ClientHomePageState extends State<ClientHomePage> {
   Widget build(BuildContext context) {
     const Color borderColor = Color(0xFF00457C);
     const Color buttonColor = Color(0xFF00457C);
-
     bool allValid = isPhoneValid && isEmailValid && isPasswordValid;
-
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -240,13 +211,11 @@ class _ClientHomePageState extends State<ClientHomePage> {
           ),
         ),
       ),
-
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-
             const SizedBox(height: 5),
             const Text(
               "Welcome Back!",
@@ -257,7 +226,6 @@ class _ClientHomePageState extends State<ClientHomePage> {
               ),
             ),
             const SizedBox(height: 5),
-
             const Text(
               "Sign in to your Client account.",
               style: TextStyle(
@@ -267,14 +235,14 @@ class _ClientHomePageState extends State<ClientHomePage> {
               ),
             ),
             const SizedBox(height: 40),
-
-            // -------------------------------- PHONE --------------------------------
+            // --------------------------------PHONE--------------------------------
             // Label for Phone/Full Name
             const Text(
               "Phone Number",
               style: TextStyle(
                 fontSize: 14,
-                color: Colors.black54, // Color similar to the labels in the image
+                color:
+                Colors.black54, // Color similar to the labels in the image
               ),
             ),
             const SizedBox(height: 6), // Small space between label and box
@@ -289,23 +257,15 @@ class _ClientHomePageState extends State<ClientHomePage> {
                 padding: EdgeInsets.only(top: 5),
                 child: Text(
                   "Phone number must start with +962",
-                  style: TextStyle(
-                    color: borderColor,
-                    fontSize: 12,
-                  ),
+                  style: TextStyle(color: borderColor, fontSize: 12),
                 ),
               ),
-
             const SizedBox(height: 16),
-
-            // -------------------------------- EMAIL --------------------------------
+            // --------------------------------EMAIL--------------------------------
             // Label for Email
             const Text(
               "Email ID",
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.black54,
-              ),
+              style: TextStyle(fontSize: 14, color: Colors.black54),
             ),
             const SizedBox(height: 6),
             _buildStyledField(
@@ -314,17 +274,12 @@ class _ClientHomePageState extends State<ClientHomePage> {
               keyboard: TextInputType.emailAddress,
               onChanged: _checkEmail,
             ),
-
             const SizedBox(height: 16),
-
-            // ------------------------------- PASSWORD -------------------------------
+            //-------------------------------PASSWORD-------------------------------
             // Label for Password
             const Text(
               "Password",
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.black54,
-              ),
+              style: TextStyle(fontSize: 14, color: Colors.black54),
             ),
             const SizedBox(height: 6),
             _buildStyledField(
@@ -344,23 +299,17 @@ class _ClientHomePageState extends State<ClientHomePage> {
                 },
               ),
             ),
-
             const SizedBox(height: 50),
-
-            // -------------------------------- ERROR --------------------------------
+            //--------------------------------ERROR--------------------------------
             if (loginError != null)
               Padding(
                 padding: const EdgeInsets.only(bottom: 10),
                 child: Text(
                   loginError!,
-                  style: const TextStyle(
-                    color: Colors.red,
-                    fontSize: 13,
-                  ),
+                  style: const TextStyle(color: Colors.red, fontSize: 13),
                 ),
               ),
-
-            // ------------------------------- LOGIN BUTTON -------------------------------
+            //-------------------------------LOGIN BUTTON-------------------------------
             SizedBox(
               width: double.infinity,
               height: 50,
@@ -376,21 +325,18 @@ class _ClientHomePageState extends State<ClientHomePage> {
                 ),
                 child: const Text(
                   "Login",
-                  style: TextStyle(
-                    fontSize: 17,
-                    color: Colors.white,
-                  ),
+                  style: TextStyle(fontSize: 17, color: Colors.white),
                 ),
               ),
             ),
-
             const SizedBox(height: 14),
-
             Center(
               child: TextButton(
                 onPressed: () => Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => const ForgotPasswordScreen()),
+                  MaterialPageRoute(
+                    builder: (_) => const ForgotPasswordScreen(),
+                  ),
                 ),
                 child: const Text(
                   "Forgot Password?",
@@ -402,49 +348,35 @@ class _ClientHomePageState extends State<ClientHomePage> {
                 ),
               ),
             ),
-
             const SizedBox(height: 10),
-
             // --------------------------------- OR ---------------------------------
             Row(
               children: const [
                 Expanded(child: Divider(color: Colors.black26)),
                 Padding(
                   padding: EdgeInsets.symmetric(horizontal: 8),
-                  child: Text(
-                    "or",
-                    style: TextStyle(color: Colors.black45),
-                  ),
+                  child: Text("or", style: TextStyle(color: Colors.black45)),
                 ),
                 Expanded(child: Divider(color: Colors.black26)),
               ],
             ),
-
             const SizedBox(height: 24),
-
             // ------------------------------- SOCIAL --------------------------------
             _buildSocialButton("Continue With Google", isFacebook: false),
-
             const SizedBox(height: 12),
-
             _buildSocialButton(
               "Continue With Facebook",
               icon: Icons.facebook,
               isFacebook: true,
             ),
-
             const SizedBox(height: 26),
-
             // ----------------------------- SIGNUP NAV -----------------------------
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 const Text(
                   "Don’t have an account?",
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.black54,
-                  ),
+                  style: TextStyle(fontSize: 14, color: Colors.black54),
                 ),
                 TextButton(
                   onPressed: () {
@@ -470,8 +402,7 @@ class _ClientHomePageState extends State<ClientHomePage> {
     );
   }
 
-
-// 🔥 BEAUTIFUL REUSABLE FIELD -------------------------
+  // 🔥 BEAUTIFUL REUSABLE FIELD -------------------------
   Widget _buildStyledField({
     required TextEditingController controller,
     required String hint, // This will become the placeholder/current value
@@ -510,7 +441,6 @@ class _ClientHomePageState extends State<ClientHomePage> {
       ),
     );
   }
-
 
   // Social Button builder
   Widget _buildSocialButton(
@@ -673,7 +603,9 @@ class _SignupScreenState extends State<SignupScreen> {
   bool get isLastValid => lastNameController.text.trim().isNotEmpty;
   bool get isPhoneValid {
     final phone = phoneController.text.trim();
-    return phone.isNotEmpty && phone.startsWith("+962") && phone.length >= 13; // +9627XXXXXXXX
+    return phone.isNotEmpty &&
+        phone.startsWith("+962") &&
+        phone.length >= 13; // +9627XXXXXXXX
   }
 
   bool get isEmailValid {
@@ -854,10 +786,7 @@ class _SignupScreenState extends State<SignupScreen> {
       children: [
         Text(
           label,
-          style: const TextStyle(
-            fontSize: 14,
-            color: Colors.black54,
-          ),
+          style: const TextStyle(fontSize: 14, color: Colors.black54),
         ),
         const SizedBox(height: 6),
         _buildStyledField(
@@ -877,10 +806,7 @@ class _SignupScreenState extends State<SignupScreen> {
             ),
           )
         else if (bottomWidget != null)
-          Padding(
-            padding: const EdgeInsets.only(top: 5),
-            child: bottomWidget,
-          ),
+          Padding(padding: const EdgeInsets.only(top: 5), child: bottomWidget),
       ],
     );
   }
@@ -1032,7 +958,6 @@ class _SignupScreenState extends State<SignupScreen> {
               ),
             ),
 
-
             const SizedBox(height: 26),
 
             // ----------------------------- LOGIN NAV -----------------------------
@@ -1041,15 +966,14 @@ class _SignupScreenState extends State<SignupScreen> {
               children: [
                 const Text(
                   "Already have an account?",
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.black54,
-                  ),
+                  style: TextStyle(fontSize: 14, color: Colors.black54),
                 ),
                 TextButton(
                   onPressed: () {
                     // افتراض أن LoginScreen موجودة في المسار الصحيح
-                    Navigator.pop(context); // العودة لشاشة الدخول (ClientHomePage)
+                    Navigator.pop(
+                      context,
+                    ); // العودة لشاشة الدخول (ClientHomePage)
                   },
                   child: const Text(
                     "Login",
@@ -1195,6 +1119,7 @@ class ActivityHomeScreen extends StatefulWidget {
   final String lastName;
   final String email;
   final String phone;
+
   const ActivityHomeScreen({
     Key? key,
     this.firstName = '',
@@ -1202,6 +1127,7 @@ class ActivityHomeScreen extends StatefulWidget {
     this.email = '',
     this.phone = '',
   }) : super(key: key);
+
   @override
   State<ActivityHomeScreen> createState() => _ActivityHomeScreenState();
 }
@@ -1209,16 +1135,22 @@ class ActivityHomeScreen extends StatefulWidget {
 class _ActivityHomeScreenState extends State<ActivityHomeScreen> {
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
+
+  // 👇 جديد: ScrollController عشان نقدر نطلع لفوق
+  final ScrollController _scrollController = ScrollController();
+
   final List<Map<String, String>> activities = [
-    {"title": "House cleaning", "image": "imagee/house clening.jpg"},
-    {"title": "Handyman", "image": "imagee/handyman.jpg"},
-    {"title": "Home nursing", "image": "imagee/nirs.jpg"},
-    {"title": "Local moving", "image": "imagee/sandoq.jpg"},
-    {"title": "Junk removal", "image": "imagee/adah.jpg"},
-    {"title": "Furniture assembly", "image": "imagee/shakosh.jpg"},
+    {"title": "Cleanix", "image": "imagee/handlyNew-_2_.jpg"},
+    {"title": "Fixer", "image": "imagee/handlyNew-_1_.jpg"},
+    {"title": "Carely", "image": "imagee/LocalNew-_2_.jpg"},
+    {"title": "Moveit", "image": "imagee/LocalNew-_1_.jpg"},
+    {"title": "Clearit", "image": "imagee/removNew.jpg"},
+    {"title": "BuildUp", "image": "imagee/assemblyNew.jpg"},
   ];
+
   List<Map<String, String>> filteredActivities = [];
   int _selectedIndex = 2; // Service بالمنتصف
+
   @override
   void initState() {
     super.initState();
@@ -1239,11 +1171,20 @@ class _ActivityHomeScreenState extends State<ActivityHomeScreen> {
   void dispose() {
     _searchController.dispose();
     _searchFocusNode.dispose();
+    _scrollController
+        .dispose(); // 👈 لازم نعمل dispose للـ ScrollController كمان
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    const primaryColor = Color(0xFF00457C);
+
+    // تكييف بسيط لعدد الأعمدة حسب عرض الشاشة
+    final int crossAxisCount = size.width < 360 ? 2 : 3;
+    final double childAspectRatio = size.width < 360 ? 0.8 : 0.85;
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -1255,384 +1196,473 @@ class _ActivityHomeScreenState extends State<ActivityHomeScreen> {
         ),
         centerTitle: true,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              "Welcome, ${widget.firstName} ${widget.lastName}",
-              style: const TextStyle(fontSize: 18, color: Color(0xFF00457C)),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _searchController,
-              focusNode: _searchFocusNode,
-              decoration: InputDecoration(
-                hintText: "What's on Your to-do List",
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 10,
+      body: SafeArea(
+        child: SingleChildScrollView(
+          controller:
+          _scrollController, // 👈 ربطنا الـ ScrollController بالسكول
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                "Welcome, ${widget.firstName} ${widget.lastName}",
+                style: const TextStyle(
+                  fontSize: 20,
+                  color: Color(0xFF00457C),
+                  fontWeight: FontWeight.w600,
                 ),
               ),
-            ),
-            const SizedBox(height: 20),
-            const Text(
-              "Based On Your Activity",
-              style: TextStyle(fontSize: 16, color: Color(0xFF00457C)),
-            ),
-            const SizedBox(height: 12),
-            filteredActivities.isEmpty
-                ? const Center(
-              child: Column(
-                children: [
-                  Icon(
-                    Icons.error_outline,
-                    color: Colors.orange,
-                    size: 40,
+              const SizedBox(height: 16),
+              TextField(
+                controller: _searchController,
+                focusNode: _searchFocusNode,
+                decoration: InputDecoration(
+                  hintText: "Search for services...",
+                  filled: true,
+                  fillColor: Colors.white,
+                  prefixIcon: const Icon(Icons.search, color: primaryColor),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
                   ),
-                  SizedBox(height: 8),
-                  Text(
-                    "The service is not exist",
-                    style: TextStyle(
-                      fontSize: 16,
+                  //contentPadding: const EdgeInsets.symmetric(
+                  //  horizontal: 12,
+                  //  vertical: 10,
+                  // ),
+                ),
+              ),
+              const SizedBox(height: 24),
+              const Text(
+                "Based On Your Activity",
+                style: TextStyle(
+                  fontSize: 18,
+                  color: Color(0xFF00457C),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 12),
+              filteredActivities.isEmpty
+                  ? const Center(
+                child: Column(
+                  children: [
+                    Icon(
+                      Icons.error_outline,
                       color: Colors.orange,
-                      fontWeight: FontWeight.bold,
+                      size: 40,
                     ),
-                  ),
-                ],
+                    SizedBox(height: 8),
+                    Text(
+                      "The service is not exist",
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.orange,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              )
+                  : GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  childAspectRatio: 0.9,
+                  crossAxisSpacing: 16,
+                  mainAxisSpacing: 16,
+                ),
+                itemCount: filteredActivities.length,
+                itemBuilder: (context, index) {
+                  final activity = filteredActivities[index];
+                  return InkWell(
+                    onTap: () {
+                      if (activity["title"] == "Cleanix") {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                            const HouseCleaningProsPage(),
+                          ),
+                        );
+                      }
+                    },
+                    child: Column(
+                      children: [
+                        Expanded(
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: Image.network(
+                              activity["image"]!,
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          activity["title"]!,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(fontSize: 20),
+                        ),
+                      ],
+                    ),
+                  );
+                },
               ),
-            )
-                : GridView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              gridDelegate:
-              const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 3,
-                childAspectRatio: 0.85,
-                crossAxisSpacing: 10,
-                mainAxisSpacing: 10,
-              ),
-              itemCount: filteredActivities.length,
-              itemBuilder: (context, index) {
-                final activity = filteredActivities[index];
-                return InkWell(
-                  onTap: () {
-                    if (activity["title"] == "House cleaning") {
+            ],
+          ),
+        ),
+      ),
+      bottomNavigationBar: StreamBuilder<QuerySnapshot>(
+        // 👇 نجيب كل الأوردرات لهذا الكلينت
+        stream: FirebaseFirestore.instance
+            .collection('orders')
+            .where(
+          'clientId',
+          isEqualTo: FirebaseAuth.instance.currentUser?.uid,
+        )
+            .snapshots(),
+        builder: (context, snapshot) {
+          int notifCount = 0;
+
+          if (snapshot.hasData) {
+            // نعدّ بس الطلبات اللي مش Pending (Accepted / Rejected / Completed)
+            final docs = snapshot.data!.docs;
+            notifCount = docs.where((doc) {
+              final data = doc.data() as Map<String, dynamic>;
+              final status = (data['status'] ?? 'Pending')
+                  .toString()
+                  .toLowerCase();
+              return status != 'pending';
+            }).length;
+          }
+
+          return Container(
+            margin: const EdgeInsets.all(12),
+            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.grey.withOpacity(0.2),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: List.generate(5, (index) {
+                final bool isService = index == 2;
+                final Color selectedColor = primaryColor;
+
+                // 🔹 الآيتم اللي بالنص (Service) زي ما هو
+                if (isService) {
+                  return GestureDetector(
+                    onTap: () {
+                      // هون لو حاب تعمل إشي مثلا ترجع للهوم نفس الشاشة
+                    },
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 300),
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF00457C), Color(0xFF00C6FF)],
+                        ),
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: selectedColor.withOpacity(0.3),
+                            blurRadius: 8,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: const [
+                          Icon(
+                            Icons.home_repair_service,
+                            color: Colors.white,
+                            size: 28,
+                          ),
+                          SizedBox(height: 4),
+                          Text(
+                            "Service",
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }
+
+                // 🔹 باقي الأيقونات (Notification, Search, Inbox, Profile)
+                final icons = [
+                  Icons.notifications,
+                  Icons.search,
+                  Icons.message,
+                  Icons.person,
+                ];
+                final labels = ["Notification", "Search", "Inbox", "Profile"];
+
+                // لأن عنا Service بالنص، بنعمل mapping بسيط
+                final mappedIndex = index > 2 ? index - 1 : index;
+
+                // ✅ Notification (index 0) مع البادج + فتح صفحة النوتيفيكيشن
+                if (mappedIndex == 0) {
+                  final baseItem = _AnimatedNavBarItem(
+                    icon: icons[mappedIndex],
+                    label: labels[mappedIndex],
+                    onTap: () {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => const HouseCleaningPage(),
+                          builder: (context) =>
+                          const ClientNotificationsScreen(),
                         ),
                       );
-                    }
-                  },
-                  child: Column(
+                    },
+                  );
+
+                  return Stack(
+                    clipBehavior: Clip.none,
                     children: [
-                      Expanded(
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: Image.network(
-                            activity["image"]!,
-                            fit: BoxFit.cover,
+                      baseItem,
+                      if (notifCount > 0)
+                        Positioned(
+                          right: -2,
+                          top: -2,
+                          child: Container(
+                            padding: const EdgeInsets.all(2),
+                            decoration: const BoxDecoration(
+                              color: Colors.red,
+                              shape: BoxShape.circle,
+                            ),
+                            constraints: const BoxConstraints(
+                              minWidth: 16,
+                              minHeight: 16,
+                            ),
+                            child: Text(
+                              notifCount.toString(),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        activity["title"]!,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(fontSize: 12),
-                      ),
                     ],
-                  ),
+                  );
+                }
+
+                // ✅ Search (index 1) → يطلع لفوق ويفوكس على بوكس السيرش
+                if (mappedIndex == 1) {
+                  return _AnimatedNavBarItem(
+                    icon: icons[mappedIndex],
+                    label: labels[mappedIndex],
+                    onTap: () async {
+                      await _scrollController.animateTo(
+                        0,
+                        duration: const Duration(milliseconds: 400),
+                        curve: Curves.easeInOut,
+                      );
+                      FocusScope.of(context).requestFocus(_searchFocusNode);
+                    },
+                  );
+                }
+
+                // ✅ Inbox و Profile نفس اللي كان عندك
+                return _AnimatedNavBarItem(
+                  icon: icons[mappedIndex],
+                  label: labels[mappedIndex],
+                  onTap: () {
+                    switch (mappedIndex) {
+                      case 2: // Inbox
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const ClientChatListScreen(),
+                          ),
+                        );
+                        break;
+                      case 3: // Profile
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => ProfileScreen(),
+                          ),
+                        );
+                        break;
+                    }
+                  },
                 );
-              },
+              }),
             ),
-          ],
-        ),
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        type: BottomNavigationBarType.fixed,
-        currentIndex: _selectedIndex,
-        selectedItemColor: Colors.black,
-        unselectedItemColor: Colors.black54,
-        onTap: (index) {
-          setState(() {
-            _selectedIndex = index;
-          });
-          if (index == 3) {
-            // Messages
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const ClientChatListScreen(),
-              ),
-            );
-          } else if (index == 4) {
-            // Profile
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => ProfileScreen()),
-            );
-          }
+          );
         },
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.notifications, color: Color(0xFF00457C)),
-            label: "Notification",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.search, color: Color(0xFF00457C)),
-            label: "Search",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home_repair_service, color: Color(0xFF00457C)),
-            label: "Service",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.message, color: Color(0xFF00457C)),
-            label: "Inbox",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person, color: Color(0xFF00457C)),
-            label: "Profile",
-          ),
-        ],
       ),
     );
   }
 }
 
-class HouseCleaningPage extends StatefulWidget {
-  const HouseCleaningPage({Key? key}) : super(key: key);
+class _ServiceCard extends StatefulWidget {
+  final String title;
+  final String imageUrl;
+  final VoidCallback onTap;
+
+  const _ServiceCard({
+    Key? key,
+    required this.title,
+    required this.imageUrl,
+    required this.onTap,
+  }) : super(key: key);
+
   @override
-  State<HouseCleaningPage> createState() => _HouseCleaningPageState();
+  State<_ServiceCard> createState() => _ServiceCardState();
 }
 
-Widget buildServiceCard({
-  required String image,
-  required String title,
-  required String price,
-  required String info,
-  VoidCallback? onTap,
-}) {
-  return InkWell(
-    onTap: onTap,
-    borderRadius: BorderRadius.circular(12),
-    child: Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      margin: EdgeInsets.symmetric(vertical: 8),
-      elevation: 3,
-      child: Padding(
-        padding: const EdgeInsets.all(12.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+class _ServiceCardState extends State<_ServiceCard> {
+  bool _isPressed = false;
+  bool _isHovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      cursor: _isHovered ? SystemMouseCursors.click : SystemMouseCursors.basic,
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
+      child: GestureDetector(
+        onTapDown: (_) => setState(() => _isPressed = true),
+        onTapUp: (_) {
+          setState(() => _isPressed = false);
+          widget.onTap();
+        },
+        onTapCancel: () => setState(() => _isPressed = false),
+        child: AnimatedScale(
+          scale: _isPressed ? 0.97 : 1.0,
+          duration: const Duration(milliseconds: 150),
+          curve: Curves.easeInOut,
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black12,
+                  blurRadius: 8,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Column(
               children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(10),
-                  child: Image.asset(
-                    image,
-                    height: 60,
-                    width: 60,
-                    fit: BoxFit.cover,
-                  ),
-                ),
-                SizedBox(width: 12),
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        title,
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      SizedBox(height: 4),
-                      Text(
-                        price,
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.black.withOpacity(0.6),
-                        ),
-                      ),
-                      SizedBox(height: 4),
-                      Text(
-                        "JoFix Friendly",
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.green,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                ElevatedButton(
-                  onPressed: () {},
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Color(0xFF00457C),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+                  child: ClipRRect(
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(20),
+                    ),
+                    child: Image.network(
+                      widget.imageUrl,
+                      fit: BoxFit.cover,
+                      width: double.infinity,
                     ),
                   ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(12),
                   child: Text(
-                    "Search pros",
-                    style: TextStyle(color: Colors.white),
+                    widget.title,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: 25,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF00457C),
+                    ),
                   ),
                 ),
               ],
             ),
-            SizedBox(height: 10),
-            Text(info, style: TextStyle(fontSize: 13, color: Colors.black87)),
-            SizedBox(height: 6),
-            Text(
-              "Tips & info",
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.blue,
-                decoration: TextDecoration.underline,
-              ),
-            ),
-          ],
+          ),
         ),
       ),
-    ),
-  );
+    );
+  }
 }
 
-class _HouseCleaningPageState extends State<HouseCleaningPage> {
-  int _selectedIndex = 2; // نحدد إنه Service هو المختار
+// ===== Animated NavBar Item =====
+class _AnimatedNavBarItem extends StatefulWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  const _AnimatedNavBarItem({
+    Key? key,
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  }) : super(key: key);
+
+  @override
+  State<_AnimatedNavBarItem> createState() => _AnimatedNavBarItemState();
+}
+
+class _AnimatedNavBarItemState extends State<_AnimatedNavBarItem> {
+  bool _isHovered = false;
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text("Keep things clean", style: TextStyle(color: Colors.white)),
-        centerTitle: true,
-        backgroundColor: Color(0xFF00457C),
-      ),
-      body: SingleChildScrollView(
-        padding: EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              "Get your space sparkling and clutter-free, then build habits to help keep it that way.",
-              style: TextStyle(fontSize: 14, color: Colors.black87),
-            ),
-            SizedBox(height: 20),
-
-            /// Section 1
-            Text(
-              "Start with the basics",
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF00457C),
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
+      child: GestureDetector(
+        onTap: widget.onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: EdgeInsets.symmetric(
+            vertical: _isHovered ? 10 : 6,
+            horizontal: _isHovered ? 16 : 12,
+          ),
+          decoration: BoxDecoration(
+            color: _isHovered
+                ? Colors.blue.withOpacity(0.1)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: _isHovered
+                ? [
+              BoxShadow(
+                color: Colors.blue.withOpacity(0.2),
+                blurRadius: 8,
+                offset: const Offset(0, 4),
               ),
-            ),
-            SizedBox(height: 10),
-            buildServiceCard(
-              image: "assets/house_cleaning.jpg",
-              title: "House Cleaning",
-              price: "JOD 30 - 180 avg.",
-              info:
-              "Did you know? To work properly, most antibacterial sprays need to sit on a surface for 60 seconds before wiping.",
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const HouseCleaningProsPage(),
-                  ),
-                );
-              },
-            ),
-            buildServiceCard(
-              image: "assets/clear_clutter.jpg",
-              title: "Clear Out Clutter",
-              price: "JOD 40 - 270 avg.",
-              info: "",
-            ),
-            buildServiceCard(
-              image: "assets/air_filters.jpg",
-              title: "Replace Air Filters",
-              price: "JOD 25 - 65 avg.",
-              info: "",
-            ),
-            SizedBox(height: 20),
-
-            /// Section 2
-            Text(
-              "Really get in there",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            SizedBox(height: 10),
-            buildServiceCard(
-              image: "assets/deep_cleaning.jpg",
-              title: "Deep Cleaning",
-              price: "JOD 60 - 270 avg.",
-              info:
-              "Did you know? The stuff that builds up on shower doors is called limescale. You can clean it with lemon juice or vinegar.",
-            ),
-            buildServiceCard(
-              image: "assets/pressure_washing.jpg",
-              title: "Pressure Washing",
-              price: "JOD 150 - 390 avg.",
-              info: "",
-            ),
-            buildServiceCard(
-              image: "assets/carpet_cleaning.jpg",
-              title: "Carpet Cleaning",
-              price: "JOD 40 - 150 avg.",
-              info: "",
-            ),
-          ],
+            ]
+                : [],
+          ),
+          transform: Matrix4.identity(),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                widget.icon,
+                color: _isHovered ? Colors.blue : Colors.black54,
+              ),
+              const SizedBox(height: 4),
+              Text(
+                widget.label,
+                style: TextStyle(
+                  color: _isHovered ? Colors.blue : Colors.black54,
+                  fontSize: 12,
+                ),
+              ),
+            ],
+          ),
         ),
-      ),
-      // 👇 الـ BottomNavigationBar
-      bottomNavigationBar: BottomNavigationBar(
-        type: BottomNavigationBarType.fixed,
-        currentIndex: _selectedIndex,
-        selectedItemColor: Colors.black,
-        unselectedItemColor: Colors.black54,
-        onTap: (index) {
-          setState(() {
-            _selectedIndex = index;
-          });
-          // هون ممكن تعمل Navigation حسب كل أيقونة إذا بدك
-          if (index == 2) {
-            // already on Service page
-          }
-        },
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.notifications, color: Color(0xFF00457C)),
-            label: "Notification",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.search, color: Color(0xFF00457C)),
-            label: "Search",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home_repair_service, color: Color(0xFF00457C)),
-            label: "Service",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.message, color: Color(0xFF00457C)),
-            label: "Message",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person, color: Color(0xFF00457C)),
-            label: "Profile",
-          ),
-        ],
       ),
     );
   }
@@ -1644,7 +1674,6 @@ class HouseCleaningProsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // جلب بيانات السيرفس بروفايدر من فايربيس
     final providersStream = FirebaseFirestore.instance
         .collection('service_providers')
         .snapshots();
@@ -1678,135 +1707,134 @@ class HouseCleaningProsPage extends StatelessWidget {
           ),
         ],
       ),
-      body: StreamBuilder<QuerySnapshot>(
-        stream: providersStream,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
+      body: SafeArea(
+        // 👈 بس ضفت هاي
+        child: StreamBuilder<QuerySnapshot>(
+          stream: providersStream,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
 
-          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-            return const Center(child: Text("No providers found"));
-          }
+            if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+              return const Center(child: Text("No providers found"));
+            }
 
-          final providers = snapshot.data!.docs;
+            final providers = snapshot.data!.docs;
 
-          return ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: providers.length,
-            itemBuilder: (context, index) {
-              final data = providers[index].data() as Map<String, dynamic>;
+            return ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: providers.length,
+              itemBuilder: (context, index) {
+                final data = providers[index].data() as Map<String, dynamic>;
 
-              final name =
-                  "${data['firstName'] ?? ''} ${data['lastName'] ?? ''}";
-              final rating = (data['rating'] ?? 4.5).toDouble();
-              final reviews = data['reviews'] ?? 10;
-              final desc =
-                  data['description'] ??
-                      "Professional service provider with high experience.";
-              final imageUrl =
-                  data['imageUrl'] ??
-                      "https://via.placeholder.com/150"; // صورة افتراضية لو مش موجودة
+                final name =
+                    "${data['firstName'] ?? ''} ${data['lastName'] ?? ''}";
+                final rating = (data['rating'] ?? 4.5).toDouble();
+                final reviews = data['reviews'] ?? 10;
+                final desc =
+                    data['description'] ??
+                        "Professional service provider/n with high experience.";
+                final image = "imagee/service pro.jpg";
 
-              return Card(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                margin: const EdgeInsets.only(bottom: 16),
-                elevation: 3,
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(10),
-                        child: Image.network(
-                          imageUrl,
-                          width: 70,
-                          height: 70,
-                          fit: BoxFit.cover,
+                return Card(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  margin: const EdgeInsets.only(bottom: 16),
+                  elevation: 3,
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(10),
+                          child: Image.network(
+                            image,
+                            width: 70,
+                            height: 70,
+                            fit: BoxFit.cover,
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              name,
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                name,
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
-                            ),
-                            const SizedBox(height: 6),
-                            Row(
-                              children: [
-                                Text(
-                                  "Exceptional $rating",
-                                  style: const TextStyle(
-                                    color: Colors.green,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                                const SizedBox(width: 4),
-                                const Icon(
-                                  Icons.star,
-                                  color: Colors.green,
-                                  size: 16,
-                                ),
-                                Text(
-                                  " ($reviews)",
-                                  style: const TextStyle(
-                                    color: Colors.green,
-                                    fontSize: 13,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              desc,
-                              style: const TextStyle(
-                                fontSize: 13,
-                                color: Colors.black87,
-                              ),
-                            ),
-                            const SizedBox(height: 6),
-                            TextButton(
-                              onPressed: () {
-                                // لما الكلاينت يضغط "Read more"
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) => CleanerDetailsPage(
-                                      name: name,
-                                      image: imageUrl,
-                                      locationLink: data['mapLink'] ?? '',
-                                      providerId: providers[index].id,
-                                      serviceName: "House Cleaning",
-                                      price: 70.0, // يمكنك جعله ديناميكي من الـ Firestore
-
+                              const SizedBox(height: 6),
+                              Row(
+                                children: [
+                                  Text(
+                                    "Exceptional $rating",
+                                    style: const TextStyle(
+                                      color: Colors.green,
+                                      fontWeight: FontWeight.w600,
                                     ),
                                   ),
-                                );
-                              },
-                              child: const Text(
-                                "Read more",
-                                style: TextStyle(color: Colors.blue),
+                                  const SizedBox(width: 4),
+                                  const Icon(
+                                    Icons.star,
+                                    color: Colors.green,
+                                    size: 16,
+                                  ),
+                                  Text(
+                                    " ($reviews)",
+                                    style: const TextStyle(
+                                      color: Colors.green,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ),
-                          ],
+                              const SizedBox(height: 6),
+                              Text(
+                                desc,
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  color: Colors.black87,
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              TextButton(
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => CleanerDetailsPage(
+                                        name: name,
+                                        image: image,
+                                        locationLink: data['mapLink'] ?? '',
+                                        providerId: providers[index].id,
+                                        serviceName: "House Cleaning",
+                                        price: 70.0,
+                                      ),
+                                    ),
+                                  );
+                                },
+                                child: const Text(
+                                  "Read more",
+                                  style: TextStyle(color: Colors.blue),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-              );
-            },
-          );
-        },
+                );
+              },
+            );
+          },
+        ),
       ),
     );
   }
@@ -1817,9 +1845,9 @@ class HouseCleaningProsPage extends StatelessWidget {
 class CleanerDetailsPage extends StatelessWidget {
   final String name;
   final String image;
-  final String providerId;   // ✅ جديد
+  final String providerId; // ✅ جديد
   final String serviceName; // ✅ جديد
-  final double price;       // ✅ جديد
+  final double price; // ✅ جديد
   final String locationLink; // الرابط من Firebase
 
   const CleanerDetailsPage({
@@ -1918,14 +1946,16 @@ class CleanerDetailsPage extends StatelessWidget {
                       ),
 
                       // ✅ زر Book Now (بعد أن نرى كل المعلومات)
-                      const SizedBox(height: 32),
+                      const SizedBox(height: 26),
                       SizedBox(
-                        width: double.infinity,
+                        width: 230,
                         child: ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFFB68645),
+                            backgroundColor: const Color(0xFF00457C),
                             padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
                           ),
                           onPressed: () {
                             Navigator.push(
@@ -1940,7 +1970,7 @@ class CleanerDetailsPage extends StatelessWidget {
                             );
                           },
                           child: const Text(
-                            "✅ Book Now — Pay Securely",
+                            " Book Now Pay Securely",
                             style: TextStyle(fontSize: 16, color: Colors.white),
                           ),
                         ),
@@ -2288,13 +2318,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _loadUserData();
   }
 
-  // تحميل بيانات المستخدم من Firestore
   Future<void> _loadUserData() async {
     try {
       final user = FirebaseAuth.instance.currentUser;
       if (user != null) {
         final doc = await FirebaseFirestore.instance
-            .collection('clients') // اسم الكولكشن تبع المستخدمين
+            .collection('clients')
             .doc(user.uid)
             .get();
 
@@ -2325,7 +2354,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     const primaryColor = Color(0xFF00457C);
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: const Color(0xFFF1F3F6),
       appBar: AppBar(
         backgroundColor: primaryColor,
         elevation: 0,
@@ -2341,122 +2370,135 @@ class _ProfileScreenState extends State<ProfileScreen> {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            // صورة الملف الشخصي
-            Center(
-              child: CircleAvatar(
-                radius: 50,
-                backgroundColor: primaryColor,
-                child: const Icon(
-                  Icons.person,
-                  size: 50,
-                  color: Colors.white,
+            // بطاقة شخصية متدرّجة مع صورة كبيرة
+            Container(
+              padding: const EdgeInsets.symmetric(
+                vertical: 20,
+                horizontal: 20,
+              ),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF00457C), Color(0xFF00C6FF)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
                 ),
+                borderRadius: BorderRadius.circular(25),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black12,
+                    blurRadius: 15,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
               ),
-            ),
-            const SizedBox(height: 16),
-
-            // الاسم الكامل
-            Text(
-              "$firstName $lastName",
-              style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF00457C),
+              child: Column(
+                children: [
+                  CircleAvatar(
+                    radius: 55,
+                    backgroundColor: Colors.white,
+                    child: const Icon(
+                      Icons.person,
+                      size: 60,
+                      color: Color(0xFF00457C),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    "$firstName $lastName",
+                    style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    email,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      color: Colors.white70,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    phone,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      color: Colors.white70,
+                    ),
+                  ),
+                ],
               ),
-            ),
-            const SizedBox(height: 8),
-
-            // البريد الإلكتروني
-            Text(
-              email,
-              style: const TextStyle(fontSize: 16, color: Colors.black54),
-            ),
-            const SizedBox(height: 4),
-
-            // رقم الهاتف
-            Text(
-              phone,
-              style: const TextStyle(fontSize: 16, color: Colors.black54),
             ),
             const SizedBox(height: 24),
 
-            const Divider(thickness: 1),
-            const SizedBox(height: 12),
-
-            // زر تعديل الملف الشخصي
-            _buildSettingTile(
-              Icons.edit,
-              "Edit Profile",
-              primaryColor,
-                  () async {
-                final result = await Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => EditProfileScreen(
-                      firstName: firstName,
-                      lastName: lastName,
-                      email: email,
-                      phone: phone,
-                    ),
-                  ),
-                );
-                if (result != null) {
-                  setState(() {
-                    firstName = result['firstName'];
-                    lastName = result['lastName'];
-                    email = result['email'];
-                    phone = result['phone'];
-                  });
-                }
-              },
-            ),
-
-            // تغيير كلمة المرور
-            _buildSettingTile(
-              Icons.lock,
-              "Change Password",
-              primaryColor,
-                  () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const ChangePasswordScreen(),
-                  ),
-                );
-              },
-            ),
-
-            // الإشعارات
-            _buildSettingTile(
-              Icons.notifications,
-              "Notifications",
-              primaryColor,
-                  () {},
-            ),
-
-            // المساعدة والدعم
-            _buildSettingTile(
-              Icons.help_outline,
-              "Help & Support",
-              primaryColor,
-                  () {},
-            ),
-
-            // تسجيل الخروج
-            _buildSettingTile(
-              Icons.logout,
-              "Logout",
-              primaryColor,
-                  () async {
-                await FirebaseAuth.instance.signOut();
-                Navigator.pushAndRemoveUntil(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const LoginScreen(),
-                  ),
-                      (route) => false,
-                );
-              },
+            // قائمة الإعدادات بأسلوب Neumorphism مع Hover / Tap
+            Column(
+              children: [
+                _buildAnimatedSettingTile(
+                  icon: Icons.edit,
+                  title: "Edit Profile",
+                  onTap: () async {
+                    final result = await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => EditProfileScreen(
+                          firstName: firstName,
+                          lastName: lastName,
+                          email: email,
+                          phone: phone,
+                        ),
+                      ),
+                    );
+                    if (result != null) {
+                      setState(() {
+                        firstName = result['firstName'];
+                        lastName = result['lastName'];
+                        email = result['email'];
+                        phone = result['phone'];
+                      });
+                    }
+                  },
+                ),
+                _buildAnimatedSettingTile(
+                  icon: Icons.lock,
+                  title: "Change Password",
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) =>
+                        const ChangePasswordScreen(),
+                      ),
+                    );
+                  },
+                ),
+                _buildAnimatedSettingTile(
+                  icon: Icons.notifications,
+                  title: "Notifications",
+                  onTap: () {},
+                ),
+                _buildAnimatedSettingTile(
+                  icon: Icons.help_outline,
+                  title: "Help & Support",
+                  onTap: () {},
+                ),
+                _buildAnimatedSettingTile(
+                  icon: Icons.logout,
+                  title: "Logout",
+                  onTap: () async {
+                    await FirebaseAuth.instance.signOut();
+                    Navigator.pushAndRemoveUntil(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const LoginScreen(),
+                      ),
+                          (route) => false,
+                    );
+                  },
+                  isLogout: true,
+                ),
+              ],
             ),
           ],
         ),
@@ -2464,32 +2506,82 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  // عنصر إعداد (Tile)
-  Widget _buildSettingTile(
-      IconData icon,
-      String title,
-      Color color,
-      VoidCallback onTap,
-      ) {
-    return Card(
-      elevation: 2,
-      margin: const EdgeInsets.symmetric(vertical: 6),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: ListTile(
-        leading: Icon(icon, color: color),
-        title: Text(
-          title,
-          style: TextStyle(
-            fontSize: 16,
-            color: title == "Logout" ? Colors.red : Colors.black87,
-            fontWeight: title == "Logout" ? FontWeight.bold : FontWeight.normal,
+  // Tile مع تأثير Hover / Tap
+  Widget _buildAnimatedSettingTile({
+    required IconData icon,
+    required String title,
+    required VoidCallback onTap,
+    bool isLogout = false,
+  }) {
+    const Color primaryColor = Color(0xFF00457C);
+    bool isPressed = false;
+
+    return StatefulBuilder(
+      builder: (context, setState) {
+        return GestureDetector(
+          onTapDown: (_) => setState(() => isPressed = true),
+          onTapUp: (_) => setState(() => isPressed = false),
+          onTapCancel: () => setState(() => isPressed = false),
+          onTap: onTap,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 150),
+            margin: const EdgeInsets.symmetric(vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+            decoration: BoxDecoration(
+              color: isLogout ? Colors.red.shade50 : Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: isPressed
+                  ? [
+                BoxShadow(
+                  color: Colors.black26,
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
+                ),
+              ]
+                  : [
+                BoxShadow(
+                  color: Colors.black12,
+                  blurRadius: 12,
+                  offset: const Offset(0, 6),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: isLogout ? Colors.red.shade100 : Colors.blue.shade50,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    icon,
+                    color: isLogout ? Colors.red : primaryColor,
+                    size: 28,
+                  ),
+                ),
+                const SizedBox(width: 20),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 17,
+                      fontWeight: isLogout ? FontWeight.bold : FontWeight.w600,
+                      color: isLogout ? Colors.red : Colors.black87,
+                    ),
+                  ),
+                ),
+                if (!isLogout)
+                  const Icon(
+                    Icons.arrow_forward_ios,
+                    size: 18,
+                    color: Colors.black38,
+                  ),
+              ],
+            ),
           ),
-        ),
-        trailing: title == "Logout"
-            ? null
-            : const Icon(Icons.arrow_forward_ios, size: 16),
-        onTap: onTap,
-      ),
+        );
+      },
     );
   }
 }
@@ -2545,9 +2637,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       setState(() => isLoading = true);
 
       final uid = FirebaseAuth.instance.currentUser?.uid;
-      if (uid == null) {
-        throw Exception("User not logged in");
-      }
+      if (uid == null) throw Exception("User not logged in");
 
       await FirebaseFirestore.instance.collection('clients').doc(uid).update({
         'firstName': firstNameController.text.trim(),
@@ -2560,7 +2650,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         const SnackBar(content: Text("Profile updated successfully")),
       );
 
-      Navigator.pop(context); // يرجع للشاشة السابقة بعد التحديث
+      Navigator.pop(context);
     } catch (e) {
       ScaffoldMessenger.of(
         context,
@@ -2570,11 +2660,46 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     }
   }
 
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String label,
+    IconData? icon,
+  }) {
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: const [
+          BoxShadow(color: Colors.black12, blurRadius: 8, offset: Offset(0, 4)),
+        ],
+      ),
+      child: TextField(
+        controller: controller,
+        style: const TextStyle(fontSize: 16),
+        decoration: InputDecoration(
+          prefixIcon: icon != null
+              ? Icon(icon, color: Color(0xFF00457C))
+              : null,
+          hintText: label,
+          hintStyle: const TextStyle(color: Colors.black38),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: BorderSide.none,
+          ),
+          filled: true,
+          fillColor: Colors.white,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     const primaryColor = Color(0xFF00457C);
+
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: const Color(0xFFF1F3F6),
       appBar: AppBar(
         backgroundColor: primaryColor,
         elevation: 0,
@@ -2585,57 +2710,65 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         centerTitle: true,
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-            TextField(
+            _buildTextField(
               controller: firstNameController,
-              decoration: const InputDecoration(
-                labelText: "First Name",
-                border: OutlineInputBorder(),
-              ),
+              label: "First Name",
+              icon: Icons.person,
             ),
-            const SizedBox(height: 12),
-            TextField(
+            _buildTextField(
               controller: lastNameController,
-              decoration: const InputDecoration(
-                labelText: "Last Name",
-                border: OutlineInputBorder(),
-              ),
+              label: "Last Name",
+              icon: Icons.person_outline,
             ),
-            const SizedBox(height: 12),
-            TextField(
+            _buildTextField(
               controller: emailController,
-              decoration: const InputDecoration(
-                labelText: "Email",
-                border: OutlineInputBorder(),
-              ),
+              label: "Email",
+              icon: Icons.email,
             ),
-            const SizedBox(height: 12),
-            TextField(
+            _buildTextField(
               controller: phoneController,
-              decoration: const InputDecoration(
-                labelText: "Phone",
-                border: OutlineInputBorder(),
-              ),
+              label: "Phone",
+              icon: Icons.phone,
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 30),
             SizedBox(
               width: double.infinity,
+              height: 55,
               child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: primaryColor,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
                 onPressed: isLoading ? null : _updateUserData,
-                child: isLoading
-                    ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text(
-                  "Save",
-                  style: TextStyle(fontSize: 16, color: Colors.white),
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  backgroundColor: Colors.transparent,
+                  shadowColor: Colors.transparent,
+                ),
+                child: Ink(
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF00457C), Color(0xFF00C6FF)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Container(
+                    alignment: Alignment.center,
+                    child: isLoading
+                        ? const CircularProgressIndicator(color: Colors.white)
+                        : const Text(
+                      "Save",
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -2647,8 +2780,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 }
 
 // ====================== Change Password Screen ======================
+
 class ChangePasswordScreen extends StatefulWidget {
   const ChangePasswordScreen({Key? key}) : super(key: key);
+
   @override
   State<ChangePasswordScreen> createState() => _ChangePasswordScreenState();
 }
@@ -2657,10 +2792,13 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
   bool _obscureCurrent = true;
   bool _obscureNew = true;
   bool _obscureConfirm = true;
+
   final TextEditingController currentController = TextEditingController();
   final TextEditingController newController = TextEditingController();
   final TextEditingController confirmController = TextEditingController();
+
   String? errorMessage;
+
   @override
   void dispose() {
     currentController.dispose();
@@ -2679,112 +2817,132 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
     return lengthOK && numberOK && upperOK && lowerOK && specialOK;
   }
 
-  // ✅ دالة للتحقق من التطابق
   bool get isConfirmMatching =>
       confirmController.text.isNotEmpty &&
           newController.text.isNotEmpty &&
           confirmController.text == newController.text;
+
+  Widget _buildPasswordField({
+    required TextEditingController controller,
+    required String label,
+    required bool obscureText,
+    required VoidCallback toggleVisibility,
+    IconData? icon,
+  }) {
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: const [
+          BoxShadow(color: Colors.black12, blurRadius: 8, offset: Offset(0, 4)),
+        ],
+      ),
+      child: TextField(
+        controller: controller,
+        obscureText: obscureText,
+        onChanged: (_) => setState(() {}),
+        decoration: InputDecoration(
+          labelText: label,
+          labelStyle: const TextStyle(color: Colors.black54),
+          prefixIcon: icon != null
+              ? Icon(icon, color: Color(0xFF00457C))
+              : null,
+          suffixIcon: IconButton(
+            icon: Icon(
+              obscureText ? Icons.visibility_off : Icons.visibility,
+              color: Colors.black54,
+            ),
+            onPressed: toggleVisibility,
+          ),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: BorderSide.none,
+          ),
+          filled: true,
+          fillColor: Colors.white,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     const primaryColor = Color(0xFF00457C);
+
     return Scaffold(
+      backgroundColor: const Color(0xFFF1F3F6),
       appBar: AppBar(
         backgroundColor: primaryColor,
         title: const Text(
           "Change Password",
-          style: TextStyle(color: Colors.white),
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-            TextField(
+            _buildPasswordField(
               controller: currentController,
+              label: "Current Password",
               obscureText: _obscureCurrent,
-              decoration: InputDecoration(
-                labelText: "Current Password",
-                border: const OutlineInputBorder(),
-                suffixIcon: IconButton(
-                  icon: Icon(
-                    _obscureCurrent ? Icons.visibility_off : Icons.visibility,
-                  ),
-                  onPressed: () =>
-                      setState(() => _obscureCurrent = !_obscureCurrent),
-                ),
-              ),
+              toggleVisibility: () =>
+                  setState(() => _obscureCurrent = !_obscureCurrent),
+              icon: Icons.lock_outline,
             ),
-            const SizedBox(height: 12),
-            TextField(
+            _buildPasswordField(
               controller: newController,
+              label: "New Password",
               obscureText: _obscureNew,
-              decoration: InputDecoration(
-                labelText: "New Password",
-                border: const OutlineInputBorder(),
-                suffixIcon: IconButton(
-                  icon: Icon(
-                    _obscureNew ? Icons.visibility_off : Icons.visibility,
-                  ),
-                  onPressed: () => setState(() => _obscureNew = !_obscureNew),
-                ),
-              ),
-              onChanged: (_) =>
-                  setState(() {}), // إعادة بناء الواجهة للتحديث الفوري
+              toggleVisibility: () =>
+                  setState(() => _obscureNew = !_obscureNew),
+              icon: Icons.lock,
             ),
-            const SizedBox(height: 12),
-            TextField(
+            _buildPasswordField(
               controller: confirmController,
+              label: "Confirm Password",
               obscureText: _obscureConfirm,
-              decoration: InputDecoration(
-                labelText: "Confirm Password",
-                border: const OutlineInputBorder(),
-                suffixIcon: IconButton(
-                  icon: Icon(
-                    _obscureConfirm ? Icons.visibility_off : Icons.visibility,
-                  ),
-                  onPressed: () =>
-                      setState(() => _obscureConfirm = !_obscureConfirm),
-                ),
-              ),
-              onChanged: (_) =>
-                  setState(() {}), // ✅ تحديث الرسالة أثناء الكتابة
+              toggleVisibility: () =>
+                  setState(() => _obscureConfirm = !_obscureConfirm),
+              icon: Icons.lock_person,
             ),
-            // ✅ الرسالة تحت confirm password
-            const SizedBox(height: 6),
             if (confirmController.text.isNotEmpty)
-              Text(
-                isConfirmMatching
-                    ? "Passwords match ✔"
-                    : "Passwords do not match ✖",
-                style: TextStyle(
-                  color: isConfirmMatching ? Colors.green : Colors.red,
-                  fontSize: 13,
-                  fontWeight: FontWeight.bold,
+              Padding(
+                padding: const EdgeInsets.only(top: 6),
+                child: Text(
+                  isConfirmMatching
+                      ? "Passwords match ✔"
+                      : "Passwords do not match ✖",
+                  style: TextStyle(
+                    color: isConfirmMatching ? Colors.green : Colors.red,
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
-            const SizedBox(height: 12),
             if (!isPasswordValid && newController.text.isNotEmpty)
-              const Text(
-                "Password must be at least 8 chars, include uppercase, lowercase, number & special char",
-                style: TextStyle(color: Colors.red, fontSize: 12),
+              const Padding(
+                padding: EdgeInsets.only(top: 6),
+                child: Text(
+                  "Password must be at least 8 chars, include uppercase, lowercase, number & special char",
+                  style: TextStyle(color: Colors.red, fontSize: 12),
+                ),
               ),
             if (errorMessage != null)
-              Text(
-                errorMessage!,
-                style: const TextStyle(color: Colors.red, fontSize: 12),
+              Padding(
+                padding: const EdgeInsets.only(top: 6),
+                child: Text(
+                  errorMessage!,
+                  style: const TextStyle(color: Colors.red, fontSize: 12),
+                ),
               ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 30),
             SizedBox(
               width: double.infinity,
+              height: 55,
               child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: primaryColor,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
                 onPressed: () {
                   if (!isConfirmMatching) {
                     setState(() {
@@ -2803,20 +2961,196 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                         content: Text(
                           "Password changed successfully (Front-end only)",
                         ),
-                        backgroundColor: Color(0xFF00457C),
+                        backgroundColor: primaryColor,
                       ),
                     );
                     Navigator.pop(context);
                   }
                 },
-                child: const Text(
-                  "Save",
-                  style: TextStyle(color: Colors.white, fontSize: 16),
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  backgroundColor: Colors.transparent,
+                  shadowColor: Colors.transparent,
+                ),
+                child: Ink(
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF00457C), Color(0xFF00C6FF)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Container(
+                    alignment: Alignment.center,
+                    child: const Text(
+                      "Save",
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
                 ),
               ),
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+//في حال كبس المستخدم على تبويب النتوفيكيشن ب البوتم بار ب الهوم سكرين
+class ClientNotificationsScreen extends StatelessWidget {
+  const ClientNotificationsScreen({Key? key}) : super(key: key);
+
+  String _normalizeStatus(String status) {
+    final s = status.toLowerCase();
+    if (s == 'pending' || s == 'paid') return 'Pending';
+    if (s == 'accepted') return 'Accepted';
+    if (s == 'rejected') return 'Rejected';
+    if (s == 'completed') return 'Completed';
+    return status;
+  }
+
+  Color _statusColor(String status) {
+    final normalized = _normalizeStatus(status);
+    switch (normalized) {
+      case 'Accepted':
+        return Colors.green;
+      case 'Completed':
+        return Colors.blue;
+      case 'Rejected':
+        return Colors.red;
+      case 'Pending':
+        return Colors.orange;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
+
+    if (user == null) {
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text(
+            "Notifications",
+            style: TextStyle(color: Colors.white),
+          ),
+          backgroundColor: Color(0xFF00457C),
+          centerTitle: true,
+        ),
+        body: const Center(
+          child: Text("Not logged in", style: TextStyle(color: Colors.red)),
+        ),
+      );
+    }
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text(
+          "Notifications",
+          style: TextStyle(color: Colors.white),
+        ),
+        backgroundColor: const Color(0xFF00457C),
+        centerTitle: true,
+      ),
+      body: StreamBuilder<QuerySnapshot>(
+        stream: FirebaseFirestore.instance
+            .collection('orders')
+            .where('clientId', isEqualTo: user.uid)
+            .snapshots(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          if (snapshot.hasError) {
+            return Center(
+              child: Text(
+                'Error: ${snapshot.error}',
+                style: const TextStyle(color: Colors.red),
+              ),
+            );
+          }
+
+          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+            return const Center(
+              child: Text(
+                "No notifications yet",
+                style: TextStyle(fontSize: 16, color: Colors.grey),
+              ),
+            );
+          }
+
+          // فلترة: ما نعرض الـ Pending، بس اللي اتغيّر عليهم إشي
+          final docs = snapshot.data!.docs.where((d) {
+            final data = d.data() as Map<String, dynamic>;
+            final status = (data['status'] ?? 'Pending').toString();
+            return _normalizeStatus(status) != 'Pending';
+          }).toList();
+
+          if (docs.isEmpty) {
+            return const Center(
+              child: Text(
+                "No notifications yet",
+                style: TextStyle(fontSize: 16, color: Colors.grey),
+              ),
+            );
+          }
+
+          return ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: docs.length,
+            itemBuilder: (context, index) {
+              final doc = docs[index];
+              final data = doc.data() as Map<String, dynamic>;
+
+              final service =
+              (data['serviceName'] ?? data['service'] ?? 'Service')
+                  .toString();
+              final rawStatus = (data['status'] ?? 'Pending').toString();
+              final status = _normalizeStatus(rawStatus);
+
+              DateTime date = DateTime.now();
+              final createdAt = data['updatedAt'] ?? data['createdAt'];
+              if (createdAt is Timestamp) {
+                date = createdAt.toDate();
+              }
+
+              String message;
+              if (status == 'Accepted') {
+                message = "Your request for $service was accepted.";
+              } else if (status == 'Rejected') {
+                message = "Your request for $service was rejected.";
+              } else if (status == 'Completed') {
+                message = "$service has been completed.";
+              } else {
+                message = "Status of $service: $status";
+              }
+
+              return Card(
+                margin: const EdgeInsets.only(bottom: 12),
+                child: ListTile(
+                  leading: Icon(
+                    Icons.notifications,
+                    color: _statusColor(status),
+                  ),
+                  title: Text(message),
+                  subtitle: Text("${date.day}/${date.month}/${date.year}"),
+                ),
+              );
+            },
+          );
+        },
       ),
     );
   }

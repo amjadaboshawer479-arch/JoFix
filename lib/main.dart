@@ -18,7 +18,7 @@ class MyApp extends StatelessWidget {
   const MyApp({super.key});
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(home: const SplashScreen()); // أول شاشة تفتح );
+    return MaterialApp(home: const SplashScreen());
   }
 }
 
@@ -50,7 +50,7 @@ class _SplashScreenState extends State<SplashScreen>
       end: 1,
     ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeIn));
     _controller.forward();
-    Timer(const Duration(seconds: 6), () {
+    Timer(const Duration(seconds: 5), () {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => const TravelloOnboarding()),
@@ -77,19 +77,20 @@ class _SplashScreenState extends State<SplashScreen>
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
+                Image.asset("imagee/lojo2.jpg", height: 300),
                 const Text(
-                  "JoFix",
+                  "",
                   style: TextStyle(
                     color: brown,
                     fontSize: 42,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 10),
                 AnimatedTextKit(
                   animatedTexts: [
                     TypewriterAnimatedText(
-                      'Caring For Your Life,\nMade Easy.',
+                      '',
                       textAlign: TextAlign.center,
                       textStyle: const TextStyle(
                         color: Colors.black87,

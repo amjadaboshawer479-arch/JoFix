@@ -14,17 +14,17 @@ class _TravelloOnboardingState extends State<TravelloOnboarding> {
 
   final List<Map<String, String>> onboardingData = [
     {
-      "image": "assets/service1.png",
+      "image": "imagee/onBording.jpg",
       "title": "Find trusted services easily",
       "subtitle": "All your daily needs in one place",
     },
     {
-      "image": "assets/service2.png",
+      "image": "imagee/OnBording2.jpg",
       "title": "Book professionals instantly",
       "subtitle": "Fast, reliable, and affordable help",
     },
     {
-      "image": "assets/service3.png",
+      "image": "imagee/Onbording3.jpg",
       "title": "Relax, we’ll handle the rest",
       "subtitle": "From cleaning to repair — we’ve got you covered",
     },
@@ -37,7 +37,7 @@ class _TravelloOnboardingState extends State<TravelloOnboarding> {
       body: SafeArea(
         child: Column(
           children: [
-            // 2.1. شاشة التمرير (PageView.builder)
+            //  (PageView.builder)
             Expanded(
               child: PageView.builder(
                 controller: _controller,
@@ -57,7 +57,7 @@ class _TravelloOnboardingState extends State<TravelloOnboarding> {
                 },
               ),
             ),
-            // 2.2. مؤشرات الصفحات والزر (في الأسفل بشكل ثابت)
+
             Padding(
               padding: const EdgeInsets.symmetric(
                 horizontal: 24.0,
@@ -66,7 +66,7 @@ class _TravelloOnboardingState extends State<TravelloOnboarding> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  // المؤشرات
+
                   Row(
                     children: List.generate(
                       onboardingData.length,
@@ -84,13 +84,10 @@ class _TravelloOnboardingState extends State<TravelloOnboarding> {
                       ),
                     ),
                   ),
-                  // زر التنقل
+
                   GestureDetector(
                     onTap: () {
                       if (_currentIndex == onboardingData.length - 1) {
-                        ScaffoldMessenger.of(
-                          context,
-                        );
                         Navigator.pushReplacement(
                           context,
                           MaterialPageRoute(

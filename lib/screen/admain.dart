@@ -241,10 +241,10 @@ class _ManageUsersPageState extends State<ManageUsersPage> {
       users = allUsers
           .where(
             (u) =>
-                u['firstName']!.toLowerCase().contains(query.toLowerCase()) ||
-                u['lastName']!.toLowerCase().contains(query.toLowerCase()) ||
-                u['email']!.toLowerCase().contains(query.toLowerCase()),
-          )
+        u['firstName']!.toLowerCase().contains(query.toLowerCase()) ||
+            u['lastName']!.toLowerCase().contains(query.toLowerCase()) ||
+            u['email']!.toLowerCase().contains(query.toLowerCase()),
+      )
           .toList();
     });
   }
@@ -352,7 +352,7 @@ class _ManageUsersPageState extends State<ManageUsersPage> {
                                   users[index] = result;
                                   allUsers[allUsers.indexWhere(
                                         (u) => u['email'] == result['email'],
-                                      )] =
+                                  )] =
                                       result;
                                 });
                               }
@@ -408,7 +408,7 @@ class _ManageUsersPageState extends State<ManageUsersPage> {
             onPressed: () {
               setState(() {
                 allUsers.removeWhere(
-                  (u) => u['email'] == users[index]['email'],
+                      (u) => u['email'] == users[index]['email'],
                 );
                 users.removeAt(index);
               });
@@ -681,8 +681,8 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
       );
       final matchesFilter =
           filter == "All" ||
-          (filter == "Active" && s['active'] == true) ||
-          (filter == "Inactive" && s['active'] == false);
+              (filter == "Active" && s['active'] == true) ||
+              (filter == "Inactive" && s['active'] == false);
       return matchesSearch && matchesFilter;
     }).toList();
   }
@@ -823,7 +823,7 @@ class _ManagePostsScreenState extends State<ManagePostsScreen> {
     return posts.where((post) {
       final matchesSearch =
           post["title"].toLowerCase().contains(searchQuery.toLowerCase()) ||
-          post["content"].toLowerCase().contains(searchQuery.toLowerCase());
+              post["content"].toLowerCase().contains(searchQuery.toLowerCase());
 
       final matchesFilter = filter == "All" || post["status"] == filter;
       return matchesSearch && matchesFilter;
@@ -866,8 +866,8 @@ class _ManagePostsScreenState extends State<ManagePostsScreen> {
                 items: ["Published", "Hidden"]
                     .map(
                       (s) =>
-                          DropdownMenuItem(value: s, child: Text(s.toString())),
-                    )
+                      DropdownMenuItem(value: s, child: Text(s.toString())),
+                )
                     .toList(),
                 onChanged: (value) {
                   setState(() {
@@ -1088,7 +1088,7 @@ class PostDetailsScreen extends StatelessWidget {
   const PostDetailsScreen({Key? key, required this.post}) : super(key: key);
   @override
   Widget build(BuildContext context) {
-    const primaryColor = Color(0xFFB68645);
+    const primaryColor = Color(0xFF00457C);
     return Scaffold(
       appBar: AppBar(
         backgroundColor: primaryColor,
