@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'client_screen.dart';
 import 'provider_screen.dart';
-import 'admain.dart'; // صفحة الأدمن
+import 'admain.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -17,11 +17,11 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFFF5EE),
+      backgroundColor: Colors.white,
       body: SafeArea(
         child: Stack(
           children: [
-            // المحتوى الأساسي
+
             Center(
               child: Padding(
                 padding: const EdgeInsets.symmetric(
@@ -31,15 +31,12 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    // الصورة والنصوص
+
                     Expanded(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Image.asset(
-                            "assets/job_illustration.png",
-                            height: 220,
-                          ),
+                          Image.asset("imagee/lojo2.jpg", height: 220),
                           const SizedBox(height: 30),
                           const Text(
                             "Discover Your\nDream Job here",
@@ -63,7 +60,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
 
-                    // الأزرار السفلية
+
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
@@ -167,7 +164,27 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             ),
 
-            // زر الأدمن الشفاف
+            Positioned(
+              top: 20,
+              left: 20,
+              child: GestureDetector(
+                onLongPress: () async {
+                  // اضغط لمدة 3 ثواني قبل الانتقال
+                  await Future.delayed(const Duration(seconds: 3));
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const AdminLoginScreen(),
+                    ),
+                  );
+                },
+                child: const Icon(
+                  Icons.admin_panel_settings,
+                  size: 40,
+                  color: Colors.transparent,
+                ),
+              ),
+            ),
           ],
         ),
       ),

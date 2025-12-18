@@ -3,12 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-import 'package:amjad/screen/login_screen.dart'; // Assuming this imports ServiceProviderHome now
-import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-
-
 //----------a login service provider----------//
 class ServiseProviderLogin extends StatefulWidget {
   const ServiseProviderLogin({super.key});
@@ -153,8 +147,10 @@ class _ServiseProviderLoginState extends State<ServiseProviderLogin> {
           borderSide: const BorderSide(color: primaryColor, width: 2.0),
           borderRadius: BorderRadius.circular(12),
         ),
-        contentPadding:
-        const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 12,
+          vertical: 16,
+        ),
         filled: true,
         fillColor: primaryColor.withOpacity(0.05),
       );
@@ -162,11 +158,15 @@ class _ServiseProviderLoginState extends State<ServiseProviderLogin> {
 
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar( // 🚀 تم تفعيل الـ AppBar
+      appBar: AppBar(
+        // 🚀 تم تفعيل الـ AppBar
         backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: primaryColor), // 👈 زر الرجوع
+          icon: const Icon(
+            Icons.arrow_back_ios,
+            color: primaryColor,
+          ), // 👈 زر الرجوع
           onPressed: () {
             Navigator.pop(context); // للرجوع للشاشة السابقة (ClientHomePage)
           },
@@ -199,8 +199,11 @@ class _ServiseProviderLoginState extends State<ServiseProviderLogin> {
                     ),
                   ],
                 ),
-                child:
-                const Icon(Icons.person_pin, size: 50, color: primaryColor),
+                child: const Icon(
+                  Icons.person_pin,
+                  size: 50,
+                  color: primaryColor,
+                ),
               ),
             ),
             // 🖋️ Title
@@ -243,9 +246,7 @@ class _ServiseProviderLoginState extends State<ServiseProviderLogin> {
               decoration: customInput("Password", Icons.lock).copyWith(
                 suffixIcon: IconButton(
                   icon: Icon(
-                    isPasswordVisible
-                        ? Icons.visibility
-                        : Icons.visibility_off,
+                    isPasswordVisible ? Icons.visibility : Icons.visibility_off,
                     color: primaryColor,
                   ),
                   onPressed: () {
@@ -269,8 +270,11 @@ class _ServiseProviderLoginState extends State<ServiseProviderLogin> {
                   showDialog(
                     context: context,
                     barrierDismissible: false,
-                    builder: (_) =>
-                    const Center(child: CircularProgressIndicator(color: primaryColor)),
+                    builder: (_) => const Center(
+                      child: CircularProgressIndicator(
+                        color: primaryColor,
+                      ),
+                    ),
                   );
 
                   try {
@@ -281,8 +285,7 @@ class _ServiseProviderLoginState extends State<ServiseProviderLogin> {
                     );
 
                     final uid = cred.user?.uid;
-                    if (uid == null)
-                      throw Exception("User ID not found");
+                    if (uid == null) throw Exception("User ID not found");
 
                     final firestore = FirebaseFirestore.instance;
                     final doc = await firestore
@@ -295,7 +298,8 @@ class _ServiseProviderLoginState extends State<ServiseProviderLogin> {
                     if (!doc.exists) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
-                            content: Text("Profile not found.")),
+                          content: Text("Profile not found."),
+                        ),
                       );
                       return;
                     }
@@ -316,8 +320,8 @@ class _ServiseProviderLoginState extends State<ServiseProviderLogin> {
                     Navigator.pop(context);
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                          content:
-                          Text(e.message ?? "Login failed")),
+                        content: Text(e.message ?? "Login failed"),
+                      ),
                     );
                   }
                 }
@@ -485,10 +489,11 @@ class _SignupScreenState extends State<SignupScreen> {
 
     final host = uri.host.toLowerCase();
 
-    final isGoogleMaps = host.contains('google.com') ||
-        host.contains('maps.app.goo.gl') ||
-        host.contains('goo.gl') ||
-        host.contains('google.co');
+    final isGoogleMaps =
+        host.contains('google.com') ||
+            host.contains('maps.app.goo.gl') ||
+            host.contains('goo.gl') ||
+            host.contains('google.co');
 
     return isGoogleMaps;
   }
@@ -506,14 +511,19 @@ class _SignupScreenState extends State<SignupScreen> {
   }
 
   // 🎨 Modern Input Decoration Function for Signup
-  InputDecoration _buildInputDecoration(String labelText, String? errorText,
-      {Widget? suffixIcon}) {
+  InputDecoration _buildInputDecoration(
+      String labelText,
+      String? errorText, {
+        Widget? suffixIcon,
+      }) {
     const Color primaryColor = Color(0xFF00457C);
     return InputDecoration(
       labelText: labelText,
       labelStyle: const TextStyle(color: primaryColor),
-      floatingLabelStyle:
-      const TextStyle(color: primaryColor, fontWeight: FontWeight.bold),
+      floatingLabelStyle: const TextStyle(
+        color: primaryColor,
+        fontWeight: FontWeight.bold,
+      ),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
         borderSide: const BorderSide(color: Colors.grey),
@@ -532,8 +542,7 @@ class _SignupScreenState extends State<SignupScreen> {
       ),
       errorText: errorText,
       suffixIcon: suffixIcon,
-      contentPadding:
-      const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
       filled: true,
       fillColor: primaryColor.withOpacity(0.03),
     );
@@ -654,16 +663,26 @@ class _SignupScreenState extends State<SignupScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text("- At least 8 characters",
-                      style: TextStyle(fontSize: 13, color: Colors.black54)),
-                  Text("- Uppercase (A-Z)",
-                      style: TextStyle(fontSize: 13, color: Colors.black54)),
-                  Text("- Lowercase (a-z)",
-                      style: TextStyle(fontSize: 13, color: Colors.black54)),
-                  Text("- Number (0-9)",
-                      style: TextStyle(fontSize: 13, color: Colors.black54)),
-                  Text("- Special character (!@#\$%^&*)",
-                      style: TextStyle(fontSize: 13, color: Colors.black54)),
+                  Text(
+                    "- At least 8 characters",
+                    style: TextStyle(fontSize: 13, color: Colors.black54),
+                  ),
+                  Text(
+                    "- Uppercase (A-Z)",
+                    style: TextStyle(fontSize: 13, color: Colors.black54),
+                  ),
+                  Text(
+                    "- Lowercase (a-z)",
+                    style: TextStyle(fontSize: 13, color: Colors.black54),
+                  ),
+                  Text(
+                    "- Number (0-9)",
+                    style: TextStyle(fontSize: 13, color: Colors.black54),
+                  ),
+                  Text(
+                    "- Special character (!@#\$%^&*)",
+                    style: TextStyle(fontSize: 13, color: Colors.black54),
+                  ),
                 ],
               ),
             ),
@@ -673,13 +692,16 @@ class _SignupScreenState extends State<SignupScreen> {
             TextField(
               controller: mapLinkController,
               keyboardType: TextInputType.url,
-              decoration: _buildInputDecoration(
+              decoration:
+              _buildInputDecoration(
                 "Google Maps Link",
                 mapLinkError,
               ).copyWith(
                 hintText: "Paste your Google Maps location link here",
-                prefixIcon:
-                const Icon(Icons.map_outlined, color: primaryColor),
+                prefixIcon: const Icon(
+                  Icons.map_outlined,
+                  color: primaryColor,
+                ),
               ),
               onChanged: (_) => validateMapLink(),
             ),
@@ -711,14 +733,17 @@ class _SignupScreenState extends State<SignupScreen> {
                   showDialog(
                     context: context,
                     barrierDismissible: false,
-                    builder: (_) =>
-                    const Center(child: CircularProgressIndicator(color: primaryColor)),
+                    builder: (_) => const Center(
+                      child: CircularProgressIndicator(
+                        color: primaryColor,
+                      ),
+                    ),
                   );
 
                   try {
                     final auth = FirebaseAuth.instance;
-                    final cred =
-                    await auth.createUserWithEmailAndPassword(
+                    final cred = await auth
+                        .createUserWithEmailAndPassword(
                       email: emailController.text.trim(),
                       password: passController.text,
                     );
@@ -729,9 +754,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
                     // 🔹 إرسال رابط التحقق (Send verification link)
                     await user.reload();
-                    await Future.delayed(
-                      const Duration(seconds: 1),
-                    );
+                    await Future.delayed(const Duration(seconds: 1));
                     await user.sendEmailVerification();
 
                     Navigator.pop(context); // إغلاق الـ loader
@@ -758,20 +781,24 @@ class _SignupScreenState extends State<SignupScreen> {
                                     .collection('service_providers')
                                     .doc(user.uid)
                                     .set({
-                                  'firstName':
-                                  firstNameController.text.trim(),
-                                  'lastName':
-                                  lastNameController.text.trim(),
-                                  'phone': phoneController.text.trim(),
-                                  'email': emailController.text.trim(),
-                                  'mapLink':
-                                  mapLinkController.text.trim(),
+                                  'firstName': firstNameController
+                                      .text
+                                      .trim(),
+                                  'lastName': lastNameController.text
+                                      .trim(),
+                                  'phone': phoneController.text
+                                      .trim(),
+                                  'email': emailController.text
+                                      .trim(),
+                                  'mapLink': mapLinkController.text
+                                      .trim(),
                                   'createdAt':
                                   FieldValue.serverTimestamp(),
                                 });
 
                                 Navigator.pop(
-                                    context); // إغلاق الـ dialog
+                                  context,
+                                ); // إغلاق الـ dialog
                                 ScaffoldMessenger.of(
                                   context,
                                 ).showSnackBar(
@@ -787,10 +814,12 @@ class _SignupScreenState extends State<SignupScreen> {
                                   MaterialPageRoute(
                                     builder: (context) =>
                                         ServiceProviderHome1(
-                                          firstName:
-                                          firstNameController.text.trim(),
-                                          lastName:
-                                          lastNameController.text.trim(),
+                                          firstName: firstNameController
+                                              .text
+                                              .trim(),
+                                          lastName: lastNameController
+                                              .text
+                                              .trim(),
                                         ),
                                   ),
                                 );
@@ -814,15 +843,18 @@ class _SignupScreenState extends State<SignupScreen> {
                   } on FirebaseAuthException catch (e) {
                     Navigator.pop(context);
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                          content: Text(e.message ?? "Error")),
+                      SnackBar(content: Text(e.message ?? "Error")),
                     );
                   }
                 }
                     : null,
                 child: const Text(
                   "Sign Up",
-                  style: TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    fontSize: 18,
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ),
@@ -834,10 +866,7 @@ class _SignupScreenState extends State<SignupScreen> {
               children: [
                 const Text(
                   "Already have an account?",
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.black54,
-                  ),
+                  style: TextStyle(fontSize: 14, color: Colors.black54),
                 ),
                 TextButton(
                   onPressed: () {
@@ -1929,42 +1958,49 @@ class OrdersScreen extends StatefulWidget {
 
 class _OrdersScreenState extends State<OrdersScreen> {
   final Color brown = const Color(0xFF00457C);
-  List<Map<String, dynamic>> orders = [
-    {
-      "id": 1,
-      "service": "Cleaning",
-      "status": "Pending",
-      "date": DateTime.now(),
-    },
-    {
-      "id": 2,
-      "service": "Painting",
-      "status": "Pending",
-      "date": DateTime.now(),
-    },
-  ];
-  void updateOrder(int index, String newStatus) {
-    setState(() {
-      orders[index]["status"] = newStatus;
-      orders[index]["date"] = DateTime.now(); // تحديث التاريخ
-    });
+
+  // بدل الليست المحلية، صار عندنا دالة تحدث الحالة في Firestore
+  Future<void> updateOrder(String orderId, String newStatus) async {
+    try {
+      await FirebaseFirestore.instance.collection('orders').doc(orderId).update(
+        {'status': newStatus, 'updatedAt': FieldValue.serverTimestamp()},
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Failed to update status: $e')));
+    }
+  }
+
+  // نطبع الستاتس بشكل مرتب، ونوحد القيم لو كانت small/caps
+  String normalizeStatus(String status) {
+    final s = status.toString().toLowerCase();
+    if (s == 'pending' || s == 'paid') return 'Pending';
+    if (s == 'accepted') return 'Accepted';
+    if (s == 'rejected') return 'Rejected';
+    if (s == 'completed') return 'Completed';
+    return status;
   }
 
   Color getStatusColor(String status) {
-    switch (status) {
+    final normalized = normalizeStatus(status);
+    switch (normalized) {
       case "Accepted":
         return Colors.green;
       case "Completed":
         return Colors.blue;
       case "Rejected":
         return Colors.red;
+      case "Pending":
+        return Colors.orange;
       default:
         return Colors.grey;
     }
   }
 
   IconData getStatusIcon(String status) {
-    switch (status) {
+    final normalized = normalizeStatus(status);
+    switch (normalized) {
       case "Accepted":
         return Icons.check_circle;
       case "Completed":
@@ -1978,97 +2014,166 @@ class _OrdersScreenState extends State<OrdersScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
+
+    // احتياط: لو مو عامل لوج إن كبروفايدر
+    if (user == null) {
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text("Orders", style: TextStyle(color: Colors.white)),
+          backgroundColor: brown,
+          centerTitle: true,
+        ),
+        body: const Center(
+          child: Text("Not logged in", style: TextStyle(color: Colors.red)),
+        ),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: const Text("Orders", style: TextStyle(color: Colors.white)),
         backgroundColor: brown,
         centerTitle: true,
       ),
-      body: ListView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: orders.length,
-        itemBuilder: (context, index) {
-          final order = orders[index];
-          return Card(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-              side: BorderSide(color: brown, width: 1),
-            ),
-            margin: const EdgeInsets.only(bottom: 16),
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    "Order #${order['id']}",
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: brown,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    "Service: ${order['service']}",
-                    style: const TextStyle(fontSize: 16),
-                  ),
-                  const SizedBox(height: 6),
-                  Row(
-                    children: [
-                      Icon(
-                        getStatusIcon(order["status"]),
-                        color: brown, // أيقونة بلون JoFix
-                        size: 20,
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        order["status"],
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: getStatusColor(order["status"]),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    "Date: ${order['date'].day}/${order['date'].month}/${order['date'].year}",
-                    style: const TextStyle(color: Colors.grey),
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: brown,
-                          foregroundColor: Colors.white,
-                        ),
-                        onPressed: () => updateOrder(index, "Accepted"),
-                        child: const Text("Accept"),
-                      ),
-                      ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: brown,
-                          foregroundColor: Colors.white,
-                        ),
-                        onPressed: () => updateOrder(index, "Rejected"),
-                        child: const Text("Reject"),
-                      ),
-                      ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: brown,
-                          foregroundColor: Colors.white,
-                        ),
-                        onPressed: () => updateOrder(index, "Completed"),
-                        child: const Text("Complete"),
-                      ),
-                    ],
-                  ),
-                ],
+      body: StreamBuilder<QuerySnapshot>(
+        stream: FirebaseFirestore.instance
+            .collection('orders')
+            .where(
+          'providerId',
+          isEqualTo: user.uid,
+        ) // 👈 لازم providerId في الأوردر يساوي uid تبع البروفايدر
+        //.orderBy('createdAt', descending: true)
+            .snapshots(),
+        builder: (context, snapshot) {
+          // حالة تحميل
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          // حالة خطأ
+          if (snapshot.hasError) {
+            return Center(
+              child: Text(
+                'Error: ${snapshot.error}',
+                style: const TextStyle(color: Colors.red),
               ),
-            ),
+            );
+          }
+
+          // لا يوجد أوردرات
+          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+            return const Center(
+              child: Text(
+                "No orders yet",
+                style: TextStyle(fontSize: 16, color: Colors.grey),
+              ),
+            );
+          }
+
+          final docs = snapshot.data!.docs;
+
+          return ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: docs.length,
+            itemBuilder: (context, index) {
+              final doc = docs[index];
+              final data = doc.data() as Map<String, dynamic>;
+
+              final int orderId = index + 1; // بدال order['id']
+              final String service =
+              (data['serviceName'] ?? data['service'] ?? 'Service')
+                  .toString();
+              final String rawStatus = (data['status'] ?? 'Pending').toString();
+              final String status = normalizeStatus(rawStatus);
+
+              // التاريخ: نستخدم updatedAt لو موجود، وإلا createdAt
+              DateTime date = DateTime.now();
+              final createdAt = data['updatedAt'] ?? data['createdAt'];
+              if (createdAt is Timestamp) {
+                date = createdAt.toDate();
+              }
+
+              return Card(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  side: BorderSide(color: brown, width: 1),
+                ),
+                margin: const EdgeInsets.only(bottom: 16),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+
+                      Text(
+                        "Order #$orderId",
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: brown,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        "Service: $service",
+                        style: const TextStyle(fontSize: 16),
+                      ),
+                      const SizedBox(height: 6),
+                      Row(
+                        children: [
+                          Icon(getStatusIcon(status), color: brown, size: 20),
+                          const SizedBox(width: 6),
+                          Text(
+                            status,
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: getStatusColor(status),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        "Date: ${date.day}/${date.month}/${date.year}",
+                        style: const TextStyle(color: Colors.grey),
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: brown,
+                              foregroundColor: Colors.white,
+                            ),
+
+                            onPressed: () => updateOrder(doc.id, "Accepted"),
+                            child: const Text("Accept"),
+                          ),
+                          ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: brown,
+                              foregroundColor: Colors.white,
+                            ),
+                            onPressed: () => updateOrder(doc.id, "Rejected"),
+                            child: const Text("Reject"),
+                          ),
+                          ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: brown,
+                              foregroundColor: Colors.white,
+                            ),
+                            onPressed: () => updateOrder(doc.id, "Completed"),
+                            child: const Text("Complete"),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
           );
         },
       ),
@@ -2127,7 +2232,7 @@ class _ServiceProviderProfileScreenState
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            // صورة الملف الشخصي
+            // profile pic
             Center(
               child: CircleAvatar(
                 radius: 50,
@@ -2404,7 +2509,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
     return lengthOK && numberOK && upperOK && lowerOK && specialOK;
   }
 
-  // ✅ دالة للتحقق من التطابق
+
   bool get isConfirmMatching =>
       confirmController.text.isNotEmpty &&
           newController.text.isNotEmpty &&
@@ -2455,7 +2560,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                 ),
               ),
               onChanged: (_) =>
-                  setState(() {}), // إعادة بناء الواجهة للتحديث الفوري
+                  setState(() {}),
             ),
             const SizedBox(height: 12),
             TextField(
@@ -2473,9 +2578,9 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                 ),
               ),
               onChanged: (_) =>
-                  setState(() {}), // ✅ تحديث الرسالة أثناء الكتابة
+                  setState(() {}),
             ),
-            // ✅ الرسالة تحت confirm password
+            //  confirm password
             const SizedBox(height: 6),
             if (confirmController.text.isNotEmpty)
               Text(
