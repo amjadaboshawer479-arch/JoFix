@@ -90,9 +90,9 @@ class CashPaymentScreen extends StatelessWidget {
             ),
             const SizedBox(height: 32),
             ...[
-              '✅ Pay only after work is done',
-              '✅ No extra fees',
-              '✅ Receipt provided',
+              ' Pay only after work is done',
+              ' No extra fees',
+              ' Receipt provided',
             ]
                 .map(
                   (text) => Row(

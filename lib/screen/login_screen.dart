@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'client_screen.dart';
 import 'provider_screen.dart';
-import 'admain.dart';
+import 'package:amjad/screen/admain_admin_full.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -21,7 +21,7 @@ class _LoginScreenState extends State<LoginScreen> {
       body: SafeArea(
         child: Stack(
           children: [
-
+            // المحتوى الأساسي
             Center(
               child: Padding(
                 padding: const EdgeInsets.symmetric(
@@ -31,7 +31,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-
+                    // الصورة والنصوص
                     Expanded(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -39,7 +39,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           Image.asset("imagee/lojo2.jpg", height: 220),
                           const SizedBox(height: 30),
                           const Text(
-                            "Discover Your\nDream Job here",
+                            "Find Your\nPerfect Fix",
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               color: Color(0xFF00457C),
@@ -49,7 +49,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                           const SizedBox(height: 16),
                           Text(
-                            "Explore all the existing job roles based on your interest and study major",
+                            "Whether it's maintenance, cleaning, or care, find the right expert to get the job done.",
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               color: Colors.grey.shade700,
@@ -60,7 +60,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
 
-
+                    // الأزرار السفلية
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
@@ -181,7 +181,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: const Icon(
                   Icons.admin_panel_settings,
                   size: 40,
-                  color: Colors.transparent,
+                  color: Colors.transparent, // لون واضح بدل الشفاف
                 ),
               ),
             ),

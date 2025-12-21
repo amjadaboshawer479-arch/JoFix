@@ -174,15 +174,9 @@ class _CardPaymentScreenState extends State<CardPaymentScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Image.network(
-                  'https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg',
-                  height: 24,
-                ),
+                Image.asset('imagee/visa.png', height: 24),
                 const SizedBox(width: 16),
-                Image.network(
-                  'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2a/Mastercard-logo.svg/800px-Mastercard-logo.svg.png',
-                  height: 24,
-                ),
+                Image.asset('imagee/master card.png', height: 24),
               ],
             ),
             const SizedBox(height: 8),

@@ -37,7 +37,7 @@ class _TravelloOnboardingState extends State<TravelloOnboarding> {
       body: SafeArea(
         child: Column(
           children: [
-            //  (PageView.builder)
+            // 2.1. شاشة التمرير (PageView.builder)
             Expanded(
               child: PageView.builder(
                 controller: _controller,
@@ -57,7 +57,7 @@ class _TravelloOnboardingState extends State<TravelloOnboarding> {
                 },
               ),
             ),
-
+            // 2.2. مؤشرات الصفحات والزر (في الأسفل بشكل ثابت)
             Padding(
               padding: const EdgeInsets.symmetric(
                 horizontal: 24.0,
@@ -66,7 +66,7 @@ class _TravelloOnboardingState extends State<TravelloOnboarding> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-
+                  // المؤشرات
                   Row(
                     children: List.generate(
                       onboardingData.length,
@@ -84,7 +84,7 @@ class _TravelloOnboardingState extends State<TravelloOnboarding> {
                       ),
                     ),
                   ),
-
+                  // زر التنقل
                   GestureDetector(
                     onTap: () {
                       if (_currentIndex == onboardingData.length - 1) {

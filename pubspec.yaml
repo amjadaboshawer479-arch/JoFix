@@ -36,7 +36,7 @@ dependencies:
   url_launcher: ^6.1.10
   geolocator: ^14.0.2
 
-  
+
   flutter:
     sdk: flutter
   animated_text_kit: ^4.2.2
@@ -47,7 +47,7 @@ dependencies:
   cupertino_icons: ^1.0.8
 
 dev_dependencies:
-  
+
   flutter_test:
     sdk: flutter
 
@@ -95,9 +95,8 @@ flutter:
     - imagee/WashInside.jpg
     - imagee/service pro.jpg
     - imagee/lojo2.jpg
-
-
-
+    - imagee/visa.png
+    - imagee/master card.png
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
 
