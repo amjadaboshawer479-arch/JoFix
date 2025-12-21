@@ -19,11 +19,14 @@ class _ClientHomePageState extends State<ClientHomePage> {
   final phoneController = TextEditingController();
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
+
   bool isPhoneValid = false;
   bool isEmailValid = false;
   bool isPasswordValid = false;
   bool isPasswordVisible = false;
+
   String? loginError;
+
   // Phone validation
   void _checkPhone(String value) {
     setState(() {
@@ -51,41 +54,51 @@ class _ClientHomePageState extends State<ClientHomePage> {
     });
   }
 
-  // login with email and pass
+  //  تسجيل الدخول بالبريد وكلمة السر
   Future<void> _loginClient() async {
     final email = emailController.text.trim();
     final password = passwordController.text.trim();
     final phone = phoneController.text.trim();
+
     setState(() {
       loginError = null;
     });
+
     try {
       final auth = FirebaseAuth.instance;
+
       final cred = await auth.signInWithEmailAndPassword(
         email: email,
         password: password,
       );
+
       final uid = cred.user?.uid;
       if (uid == null) throw Exception("User ID not found");
+
       final firestore = FirebaseFirestore.instance;
       final doc = await firestore.collection('clients').doc(uid).get();
+
       if (!doc.exists) {
         setState(() {
           loginError = "User not found in Firestore.";
         });
         return;
       }
+
       final data = doc.data()!;
       final storedPhone = (data['phone'] ?? '') as String;
+
       if (storedPhone.isNotEmpty && storedPhone != phone) {
         setState(() {
           loginError = "Phone number doesn't match our records.";
         });
         return;
       }
+
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text("Login successful!")));
+
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => const ActivityHomeScreen()),
@@ -106,71 +119,35 @@ class _ClientHomePageState extends State<ClientHomePage> {
       });
     }
   }
-  //login with facebook
-  Future<void> _loginWithFacebook() async {
-    try {
-      final result = await FacebookAuth.instance.login();
-      if (result.status != LoginStatus.success) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Facebook login failed: ${result.status}")),
-        );
-        return;
-      }
-      final accessToken = result.accessToken!;
-      final credential = FacebookAuthProvider.credential(accessToken.token);
-      final userCredential = await FirebaseAuth.instance.signInWithCredential(
-        credential,
-      );
 
-      final user = userCredential.user;
-      if (user == null) throw Exception("User not found");
-      final uid = user.uid;
-      final email = user.email ?? "";
-      final displayName = user.displayName ?? "";
-      final phone = "";
-      final docRef = FirebaseFirestore.instance.collection("clients").doc(uid);
-      final doc = await docRef.get();
-      if (!doc.exists) {
-        await docRef.set({
-          "uid": uid,
-          "email": email,
-          "fullName": displayName,
-          "phone": phone,
-          "createdAt": FieldValue.serverTimestamp(),
-        });
-      }
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const ActivityHomeScreen()),
-      );
-    } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text("Error: $e")));
-    }
-  }
-
-  // 🔥 تسجيل الدخول بجوجل
+  //  تسجيل الدخول بجوجل ( شغال)
   Future<void> _loginWithGoogle() async {
     try {
       final googleUser = await GoogleSignIn().signIn();
       if (googleUser == null) return;
+
       final googleAuth = await googleUser.authentication;
+
       final credential = GoogleAuthProvider.credential(
         accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
       );
+
       final userCredential = await FirebaseAuth.instance.signInWithCredential(
         credential,
       );
+
       final user = userCredential.user;
       if (user == null) throw Exception("User not found");
+
       final uid = user.uid;
       final email = user.email ?? "";
       final displayName = user.displayName ?? "";
       final phone = "";
+
       final docRef = FirebaseFirestore.instance.collection("clients").doc(uid);
       final doc = await docRef.get();
+
       if (!doc.exists) {
         await docRef.set({
           "uid": uid,
@@ -180,6 +157,7 @@ class _ClientHomePageState extends State<ClientHomePage> {
           "createdAt": FieldValue.serverTimestamp(),
         });
       }
+
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => const ActivityHomeScreen()),
@@ -195,7 +173,9 @@ class _ClientHomePageState extends State<ClientHomePage> {
   Widget build(BuildContext context) {
     const Color borderColor = Color(0xFF00457C);
     const Color buttonColor = Color(0xFF00457C);
+
     bool allValid = isPhoneValid && isEmailValid && isPasswordValid;
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -235,17 +215,13 @@ class _ClientHomePageState extends State<ClientHomePage> {
               ),
             ),
             const SizedBox(height: 40),
+
             // --------------------------------PHONE--------------------------------
-            // Label for Phone/Full Name
             const Text(
               "Phone Number",
-              style: TextStyle(
-                fontSize: 14,
-                color:
-                Colors.black54, // Color similar to the labels in the image
-              ),
+              style: TextStyle(fontSize: 14, color: Colors.black54),
             ),
-            const SizedBox(height: 6), // Small space between label and box
+            const SizedBox(height: 6),
             _buildStyledField(
               controller: phoneController,
               hint: "Phone e.g. +9627XXXXXXXX",
@@ -260,9 +236,10 @@ class _ClientHomePageState extends State<ClientHomePage> {
                   style: TextStyle(color: borderColor, fontSize: 12),
                 ),
               ),
+
             const SizedBox(height: 16),
+
             // --------------------------------EMAIL--------------------------------
-            // Label for Email
             const Text(
               "Email ID",
               style: TextStyle(fontSize: 14, color: Colors.black54),
@@ -274,9 +251,10 @@ class _ClientHomePageState extends State<ClientHomePage> {
               keyboard: TextInputType.emailAddress,
               onChanged: _checkEmail,
             ),
+
             const SizedBox(height: 16),
+
             //-------------------------------PASSWORD-------------------------------
-            // Label for Password
             const Text(
               "Password",
               style: TextStyle(fontSize: 14, color: Colors.black54),
@@ -299,7 +277,9 @@ class _ClientHomePageState extends State<ClientHomePage> {
                 },
               ),
             ),
+
             const SizedBox(height: 50),
+
             //--------------------------------ERROR--------------------------------
             if (loginError != null)
               Padding(
@@ -309,6 +289,7 @@ class _ClientHomePageState extends State<ClientHomePage> {
                   style: const TextStyle(color: Colors.red, fontSize: 13),
                 ),
               ),
+
             //-------------------------------LOGIN BUTTON-------------------------------
             SizedBox(
               width: double.infinity,
@@ -329,7 +310,9 @@ class _ClientHomePageState extends State<ClientHomePage> {
                 ),
               ),
             ),
+
             const SizedBox(height: 14),
+
             Center(
               child: TextButton(
                 onPressed: () => Navigator.push(
@@ -348,7 +331,9 @@ class _ClientHomePageState extends State<ClientHomePage> {
                 ),
               ),
             ),
+
             const SizedBox(height: 10),
+
             // --------------------------------- OR ---------------------------------
             Row(
               children: const [
@@ -360,16 +345,59 @@ class _ClientHomePageState extends State<ClientHomePage> {
                 Expanded(child: Divider(color: Colors.black26)),
               ],
             ),
+
             const SizedBox(height: 24),
-            // ------------------------------- SOCIAL --------------------------------
-            _buildSocialButton("Continue With Google", isFacebook: false),
-            const SizedBox(height: 12),
-            _buildSocialButton(
-              "Continue With Facebook",
-              icon: Icons.facebook,
-              isFacebook: true,
+
+
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                //  Google (شغال)
+                InkWell(
+                  onTap: _loginWithGoogle,
+                  borderRadius: BorderRadius.circular(30),
+                  child: Container(
+                    width: 52,
+                    height: 52,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.black12),
+                      color: Colors.white,
+                    ),
+                    child: const Icon(
+                      Icons.g_mobiledata,
+                      size: 34,
+                      color: Colors.black,
+                    ),
+                  ),
+                ),
+
+                const SizedBox(width: 16),
+
+                //  Facebook (منظر فقط بدون backend)
+                InkWell(
+                  onTap: null,
+                  borderRadius: BorderRadius.circular(30),
+                  child: Container(
+                    width: 52,
+                    height: 52,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.black12),
+                      color: Colors.white,
+                    ),
+                    child: const Icon(
+                      Icons.facebook,
+                      size: 30,
+                      color: Colors.blue,
+                    ),
+                  ),
+                ),
+              ],
             ),
+
             const SizedBox(height: 26),
+
             // ----------------------------- SIGNUP NAV -----------------------------
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -402,10 +430,10 @@ class _ClientHomePageState extends State<ClientHomePage> {
     );
   }
 
-  // 🔥 BEAUTIFUL REUSABLE FIELD -------------------------
+  //  BEAUTIFUL REUSABLE FIELD -------------------------
   Widget _buildStyledField({
     required TextEditingController controller,
-    required String hint, // This will become the placeholder/current value
+    required String hint,
     required Function(String) onChanged,
     TextInputType keyboard = TextInputType.text,
     bool obscure = false,
@@ -428,7 +456,6 @@ class _ClientHomePageState extends State<ClientHomePage> {
         keyboardType: keyboard,
         obscureText: obscure,
         onChanged: onChanged,
-        // The image uses the hint text as the current value style
         decoration: InputDecoration(
           hintText: hint,
           border: InputBorder.none,
@@ -437,32 +464,6 @@ class _ClientHomePageState extends State<ClientHomePage> {
             vertical: 16,
           ),
           suffixIcon: suffixIcon,
-        ),
-      ),
-    );
-  }
-
-  // Social Button builder
-  Widget _buildSocialButton(
-      String text, {
-        IconData? icon,
-        bool isFacebook = false,
-      }) {
-    return SizedBox(
-      width: double.infinity,
-      height: 48,
-      child: OutlinedButton.icon(
-        onPressed: isFacebook ? _loginWithFacebook : _loginWithGoogle,
-        style: OutlinedButton.styleFrom(
-          side: const BorderSide(color: Colors.black12),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-        ),
-        icon: icon != null
-            ? Icon(icon, color: isFacebook ? Colors.blue : Colors.black)
-            : const SizedBox.shrink(),
-        label: Text(
-          text,
-          style: const TextStyle(fontSize: 16, color: Colors.black),
         ),
       ),
     );
@@ -647,7 +648,7 @@ class _SignupScreenState extends State<SignupScreen> {
     super.dispose();
   }
 
-  // 🔥 دالة إنشاء الحساب والتخزين في الكوليكشن clients (نفس الدالة الأصلية)
+  //  دالة إنشاء الحساب والتخزين في الكوليكشن clients (نفس الدالة الأصلية)
   Future<void> _handleSignup() async {
     final firstName = firstNameController.text.trim();
     final lastName = lastNameController.text.trim();
@@ -662,7 +663,7 @@ class _SignupScreenState extends State<SignupScreen> {
     );
 
     try {
-      // 1️⃣ إنشاء الحساب داخل Firebase Authentication
+      //  إنشاء الحساب داخل Firebase Authentication
       final auth = FirebaseAuth.instance;
       final cred = await auth.createUserWithEmailAndPassword(
         email: email,
@@ -672,8 +673,6 @@ class _SignupScreenState extends State<SignupScreen> {
 
       final uid = cred.user?.uid;
       if (uid == null) throw Exception("User ID not found");
-
-      // 2️⃣ إضافة بيانات المستخدم داخل كوليكشن clients
       final firestore = FirebaseFirestore.instance;
       await firestore.collection('clients').doc(cred.user!.uid).set({
         'firstName': firstName,
@@ -683,14 +682,14 @@ class _SignupScreenState extends State<SignupScreen> {
         'createdAt': FieldValue.serverTimestamp(),
       });
 
-      Navigator.pop(context); // إغلاق التحميل
+      Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text("Please check your inbox to verifay your email."),
         ),
       );
 
-      // التنقل للشاشة الرئيسية بعد التسجيل
+
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
@@ -712,23 +711,21 @@ class _SignupScreenState extends State<SignupScreen> {
     }
   }
 
-  // 🔥 وظائف الدخول الاجتماعي (يمكن نقلها إلى كلاس مشترك لاحقًا)
   Future<void> _signupWithGoogle() async {
-    // يرجى إضافة منطق التسجيل عبر جوجل هنا
+
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text("Google Sign Up logic placeholder")),
     );
   }
 
   Future<void> _signupWithFacebook() async {
-    // يرجى إضافة منطق التسجيل عبر فيسبوك هنا
+
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text("Facebook Sign Up logic placeholder")),
     );
   }
 
   // -------------------------------------------------------------------
-  // 🔥 دالة مساعدة لتصميم حقول الإدخال
   Widget _buildStyledField({
     required TextEditingController controller,
     required String hint,
@@ -767,7 +764,6 @@ class _SignupScreenState extends State<SignupScreen> {
     );
   }
 
-  // 🔥 دالة مساعدة لبناء الحقل مع العنوان ورسالة الخطأ
   Widget _buildFieldWithLabel({
     required String label,
     required TextEditingController controller,
@@ -1015,12 +1011,12 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Email verified successfully!")),
       );
-      // ✅ الانتقال إلى الشاشة الرئيسية
+      //  الانتقال إلى الشاشة الرئيسية
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
           builder: (context) => ActivityHomeScreen(
-            firstName: "", // ممكن تمرر الاسم إذا بدك
+            firstName: "",
             lastName: "",
             email: updatedUser.email ?? "",
             phone: "",
@@ -1136,7 +1132,6 @@ class _ActivityHomeScreenState extends State<ActivityHomeScreen> {
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
 
-  // 👇 جديد: ScrollController عشان نقدر نطلع لفوق
   final ScrollController _scrollController = ScrollController();
 
   final List<Map<String, String>> activities = [
@@ -1186,7 +1181,7 @@ class _ActivityHomeScreenState extends State<ActivityHomeScreen> {
     final double childAspectRatio = size.width < 360 ? 0.8 : 0.85;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Color(0xFFF6F8FA),
       appBar: AppBar(
         backgroundColor: const Color(0xFF00457C),
         elevation: 0,
@@ -1208,11 +1203,13 @@ class _ActivityHomeScreenState extends State<ActivityHomeScreen> {
                 "Welcome, ${widget.firstName} ${widget.lastName}",
                 style: const TextStyle(
                   fontSize: 20,
-                  color: Color(0xFF00457C),
+                  color: primaryColor,
                   fontWeight: FontWeight.w600,
                 ),
               ),
               const SizedBox(height: 16),
+
+              // Search Bar
               TextField(
                 controller: _searchController,
                 focusNode: _searchFocusNode,
@@ -1225,34 +1222,33 @@ class _ActivityHomeScreenState extends State<ActivityHomeScreen> {
                     borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide.none,
                   ),
-                  //contentPadding: const EdgeInsets.symmetric(
-                  //  horizontal: 12,
-                  //  vertical: 10,
-                  // ),
                 ),
               ),
               const SizedBox(height: 24),
+
               const Text(
                 "Based On Your Activity",
                 style: TextStyle(
                   fontSize: 18,
-                  color: Color(0xFF00457C),
+                  color: primaryColor,
                   fontWeight: FontWeight.w600,
                 ),
               ),
               const SizedBox(height: 12),
+
+              // Grid of Activities
               filteredActivities.isEmpty
-                  ? const Center(
+                  ? Center(
                 child: Column(
-                  children: [
+                  children: const [
                     Icon(
                       Icons.error_outline,
                       color: Colors.orange,
-                      size: 40,
+                      size: 48,
                     ),
                     SizedBox(height: 8),
                     Text(
-                      "The service is not exist",
+                      "No service found",
                       style: TextStyle(
                         fontSize: 16,
                         color: Colors.orange,
@@ -1265,7 +1261,8 @@ class _ActivityHomeScreenState extends State<ActivityHomeScreen> {
                   : GridView.builder(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                gridDelegate:
+                const SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 2,
                   childAspectRatio: 0.9,
                   crossAxisSpacing: 16,
@@ -1274,37 +1271,20 @@ class _ActivityHomeScreenState extends State<ActivityHomeScreen> {
                 itemCount: filteredActivities.length,
                 itemBuilder: (context, index) {
                   final activity = filteredActivities[index];
-                  return InkWell(
+                  return _ServiceCard(
+                    title: activity["title"]!,
+                    imageUrl: activity["image"]!,
                     onTap: () {
                       if (activity["title"] == "Cleanix") {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
                             builder: (context) =>
-                            const HouseCleaningProsPage(),
+                            const HouseCleaningPage(),
                           ),
                         );
                       }
                     },
-                    child: Column(
-                      children: [
-                        Expanded(
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
-                            child: Image.network(
-                              activity["image"]!,
-                              fit: BoxFit.cover,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          activity["title"]!,
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(fontSize: 20),
-                        ),
-                      ],
-                    ),
                   );
                 },
               ),
@@ -1568,10 +1548,13 @@ class _ServiceCardState extends State<_ServiceCard> {
                     borderRadius: const BorderRadius.vertical(
                       top: Radius.circular(20),
                     ),
-                    child: Image.network(
+                    child: Image.asset(
                       widget.imageUrl,
                       fit: BoxFit.cover,
                       width: double.infinity,
+                      errorBuilder: (context, error, stackTrace) {
+                        return const Center(child: Icon(Icons.broken_image, size: 40, color: Colors.grey));
+                      },
                     ),
                   ),
                 ),
@@ -1668,6 +1651,202 @@ class _AnimatedNavBarItemState extends State<_AnimatedNavBarItem> {
   }
 }
 
+class HouseCleaningPage extends StatefulWidget {
+  const HouseCleaningPage({Key? key}) : super(key: key);
+  @override
+  State<HouseCleaningPage> createState() => _HouseCleaningPageState();
+}
+
+Widget buildServiceCard({
+  required String image,
+  required String title,
+  required String price,
+  required String info,
+  VoidCallback? onTap,
+}) {
+  return InkWell(
+    onTap: onTap,
+    borderRadius: BorderRadius.circular(12),
+    child: Card(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      margin: EdgeInsets.symmetric(vertical: 8),
+      elevation: 3,
+      child: Padding(
+        padding: const EdgeInsets.all(12.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(10),
+                  child: Image.asset(
+                    image,
+                    height: 60,
+                    width: 60,
+                    fit: BoxFit.cover,
+                  ),
+                ),
+                SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        price,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.black.withOpacity(0.6),
+                        ),
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        "JoFix Friendly",
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.green,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                ElevatedButton(
+                  onPressed: () {},
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Color(0xFF00457C),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: Text(
+                    "Search pros",
+                    style: TextStyle(color: Colors.white),
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: 10),
+            Text(info, style: TextStyle(fontSize: 13, color: Colors.black87)),
+            SizedBox(height: 6),
+            Text(
+              "Tips & info",
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.blue,
+                decoration: TextDecoration.underline,
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
+class _HouseCleaningPageState extends State<HouseCleaningPage> {
+  final primaryColor = Color(0xFF00457C);
+  int _selectedIndex = 2; // نحدد إنه Service هو المختار
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text("Keep things clean", style: TextStyle(color: Colors.white)),
+        centerTitle: true,
+        backgroundColor: Color(0xFF00457C),
+      ),
+      body: SingleChildScrollView(
+        padding: EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              "Get your space sparkling and clutter-free, then build habits to help keep it that way.",
+              style: TextStyle(fontSize: 14, color: Colors.black87),
+            ),
+            SizedBox(height: 20),
+
+            /// Section 1
+            Text(
+              "Start with the basics",
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF00457C),
+              ),
+            ),
+            SizedBox(height: 10),
+            buildServiceCard(
+              image: "imagee/house-Clening-inside.jpg",
+              title: "House Cleaning",
+              price: "JOD 30 - 180 avg.",
+              info:
+              "Did you know? To work properly, most antibacterial sprays need to sit on a surface for 60 seconds before wiping.",
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const HouseCleaningProsPage(),
+                  ),
+                );
+              },
+            ),
+            buildServiceCard(
+              image: "imagee/inside3.jpg",
+              title: "Clear Out Clutter",
+              price: "JOD 40 - 270 avg.",
+              info: "",
+            ),
+            buildServiceCard(
+              image: "imagee/inside2.jpg",
+              title: "Replace Air Filters",
+              price: "JOD 25 - 65 avg.",
+              info: "",
+            ),
+            SizedBox(height: 20),
+
+            /// Section 2
+            Text(
+              "Really get in there",
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 10),
+            buildServiceCard(
+              image: "imagee/deepCleaning inside.jpg",
+              title: "Deep Cleaning",
+              price: "JOD 60 - 270 avg.",
+              info:
+              "Did you know? The stuff that builds up on shower doors is called limescale. You can clean it with lemon juice or vinegar.",
+            ),
+            buildServiceCard(
+              image: "imagee/pressureInside.jpg",
+              title: "Pressure Washing",
+              price: "JOD 150 - 390 avg.",
+              info: "",
+            ),
+            buildServiceCard(
+              image: "imagee/WashInside.jpg",
+              title: "Carpet Cleaning",
+              price: "JOD 40 - 150 avg.",
+              info: "",
+            ),
+          ],
+        ),
+      ),
+
+      // 👇 الـ BottomNavigationBar
+    );
+  }
+}
+
 //------- اذا كبس على hose cleaning من جوا ---//
 class HouseCleaningProsPage extends StatelessWidget {
   const HouseCleaningProsPage({Key? key}) : super(key: key);
@@ -1686,19 +1865,25 @@ class HouseCleaningProsPage extends StatelessWidget {
           icon: const Icon(Icons.arrow_back, color: Colors.black),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Row(
-          children: [
-            const Icon(Icons.search, color: Colors.black54),
-            const SizedBox(width: 8),
-            const Expanded(
-              child: TextField(
-                decoration: InputDecoration(
-                  hintText: "House Cleaning • Zarqa",
-                  border: InputBorder.none,
+        title: SizedBox(
+          height: 40, // ✅ ثابت وآمن للإيموليتر
+          child: Row(
+            children: [
+              const Icon(Icons.search, color: Colors.black54),
+              const SizedBox(width: 8),
+              Expanded(
+                child: TextField(
+                  maxLines: 1,
+                  decoration: const InputDecoration(
+                    hintText: "House Cleaning • Zarqa",
+                    border: InputBorder.none,
+                    isDense: true,
+                    contentPadding: EdgeInsets.symmetric(vertical: 10),
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
         actions: const [
           Padding(
@@ -1708,12 +1893,20 @@ class HouseCleaningProsPage extends StatelessWidget {
         ],
       ),
       body: SafeArea(
-        // 👈 بس ضفت هاي
         child: StreamBuilder<QuerySnapshot>(
           stream: providersStream,
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return const Center(child: CircularProgressIndicator());
+            }
+
+            if (snapshot.hasError) {
+              return const Center(
+                child: Text(
+                  "Something went wrong",
+                  style: TextStyle(color: Colors.red),
+                ),
+              );
             }
 
             if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
@@ -1730,47 +1923,49 @@ class HouseCleaningProsPage extends StatelessWidget {
 
                 final name =
                     "${data['firstName'] ?? ''} ${data['lastName'] ?? ''}";
-                final rating = (data['rating'] ?? 4.5).toDouble();
+
+                final ratingRaw = data['rating'] ?? 4.5;
+                final rating = ratingRaw is num ? ratingRaw.toDouble() : 4.5;
+
                 final reviews = data['reviews'] ?? 10;
                 final desc =
                     data['description'] ??
-                        "Professional service provider/n with high experience.";
+                        "Professional service provider with high experience.";
+
                 final image = "imagee/service pro.jpg";
 
                 return Card(
+                  elevation: 3,
+                  margin: const EdgeInsets.only(bottom: 16),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  margin: const EdgeInsets.only(bottom: 16),
-                  elevation: 3,
                   child: Padding(
                     padding: const EdgeInsets.all(12),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(10),
-                          child: Image.network(
-                            image,
-                            width: 70,
-                            height: 70,
-                            fit: BoxFit.cover,
-                          ),
-                        ),
                         const SizedBox(width: 12),
                         Expanded(
                           child: Column(
+                            mainAxisSize: MainAxisSize.min, // ✅ مهم
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
                                 name,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                                 style: const TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
                               const SizedBox(height: 6),
-                              Row(
+
+                              // ✅ Wrap بدل Row (مستحيل يعمل overflow)
+                              Wrap(
+                                spacing: 4,
+                                crossAxisAlignment: WrapCrossAlignment.center,
                                 children: [
                                   Text(
                                     "Exceptional $rating",
@@ -1779,14 +1974,13 @@ class HouseCleaningProsPage extends StatelessWidget {
                                       fontWeight: FontWeight.w600,
                                     ),
                                   ),
-                                  const SizedBox(width: 4),
                                   const Icon(
                                     Icons.star,
                                     color: Colors.green,
                                     size: 16,
                                   ),
                                   Text(
-                                    " ($reviews)",
+                                    "($reviews)",
                                     style: const TextStyle(
                                       color: Colors.green,
                                       fontSize: 13,
@@ -1794,34 +1988,40 @@ class HouseCleaningProsPage extends StatelessWidget {
                                   ),
                                 ],
                               ),
+
                               const SizedBox(height: 6),
                               Text(
                                 desc,
+                                maxLines: 3,
+                                overflow: TextOverflow.ellipsis,
                                 style: const TextStyle(
                                   fontSize: 13,
                                   color: Colors.black87,
                                 ),
                               ),
                               const SizedBox(height: 6),
-                              TextButton(
-                                onPressed: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) => CleanerDetailsPage(
-                                        name: name,
-                                        image: image,
-                                        locationLink: data['mapLink'] ?? '',
-                                        providerId: providers[index].id,
-                                        serviceName: "House Cleaning",
-                                        price: 70.0,
+                              Align(
+                                alignment: Alignment.centerLeft,
+                                child: TextButton(
+                                  onPressed: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => CleanerDetailsPage(
+                                          name: name,
+                                          image: image,
+                                          locationLink: data['mapLink'] ?? '',
+                                          providerId: providers[index].id,
+                                          serviceName: "House Cleaning",
+                                          price: 70.0,
+                                        ),
                                       ),
-                                    ),
-                                  );
-                                },
-                                child: const Text(
-                                  "Read more",
-                                  style: TextStyle(color: Colors.blue),
+                                    );
+                                  },
+                                  child: const Text(
+                                    "Read more",
+                                    style: TextStyle(color: Colors.blue),
+                                  ),
                                 ),
                               ),
                             ],
@@ -2033,17 +2233,32 @@ class CleanerDetailsPage extends StatelessWidget {
 // ---------------- Client Chat List Screen ---------------- //
 class ClientChatListScreen extends StatelessWidget {
   const ClientChatListScreen({super.key});
+
   @override
   Widget build(BuildContext context) {
     const Color primaryColor = Color(0xFF00457C);
+    const Color backgroundColor = Color(0xFFF8FAFC);
+
     return Scaffold(
+      backgroundColor: backgroundColor,
       appBar: AppBar(
+        elevation: 0,
+        centerTitle: true,
+        backgroundColor: Colors.transparent,
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            color: primaryColor,
+            borderRadius: BorderRadius.vertical(bottom: Radius.circular(15)),
+          ),
+        ),
         title: const Text(
           'Service Providers',
-          style: TextStyle(color: Colors.white),
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+            letterSpacing: 0.8,
+          ),
         ),
-        backgroundColor: primaryColor,
-        centerTitle: true,
       ),
       body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
         stream: FirebaseFirestore.instance
@@ -2051,13 +2266,18 @@ class ClientChatListScreen extends StatelessWidget {
             .snapshots(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            return const Center(
+              child: CircularProgressIndicator(color: primaryColor),
+            );
           }
           if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-            return const Center(child: Text('No service providers found.'));
+            return _buildEmptyState();
           }
+
           final providers = snapshot.data!.docs;
+
           return ListView.builder(
+            padding: const EdgeInsets.fromLTRB(16, 20, 16, 20),
             itemCount: providers.length,
             itemBuilder: (context, index) {
               final provider = providers[index];
@@ -2065,35 +2285,131 @@ class ClientChatListScreen extends StatelessWidget {
               final fullName =
               '${data['firstName'] ?? ''} ${data['lastName'] ?? ''}'.trim();
               final email = data['email'] ?? 'No email';
-              return Card(
-                margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                child: ListTile(
-                  leading: const CircleAvatar(
-                    backgroundColor: primaryColor,
-                    child: Icon(Icons.person, color: Colors.white),
-                  ),
-                  title: Text(fullName.isEmpty ? 'Unknown Provider' : fullName),
-                  subtitle: Text(email),
-                  trailing: const Icon(Icons.chat, color: Color(0xFF00457C)),
-                  onTap: () {
-                    final currentUser = FirebaseAuth.instance.currentUser;
-                    final currentUserId = currentUser?.uid ?? '';
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => ClientChatScreen(
-                          providerId: provider.id,
-                          providerName: fullName,
-                          clientId: currentUserId,
+
+              return Container(
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.10),
+                      blurRadius: 15,
+                      offset: const Offset(0, 5),
+                    ),
+                  ],
+                ),
+                // ✅ إضافة تأثير الضغط هنا باستخدام Material و InkWell
+                child: Material(
+                  color:
+                  Colors.transparent, // للحفاظ على لون الـ Container الأصلي
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(
+                      20,
+                    ), // يجب أن يطابق انحناء الـ Container
+                    splashColor: primaryColor.withOpacity(
+                      0.1,
+                    ), // لون التموج عند الضغط
+                    highlightColor: primaryColor.withOpacity(
+                      0.05,
+                    ), // لون الوميض الخفيف
+                    onTap: () {
+                      final currentUser = FirebaseAuth.instance.currentUser;
+                      final currentUserId = currentUser?.uid ?? '';
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => ClientChatScreen(
+                            providerId: provider.id,
+                            providerName: fullName,
+                            clientId: currentUserId,
+                          ),
                         ),
+                      );
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Row(
+                        children: [
+                          // القسم الأيسر: الصورة
+                          CircleAvatar(
+                            radius: 28,
+                            backgroundColor: primaryColor.withOpacity(0.1),
+                            child: const Icon(
+                              Icons.person,
+                              color: primaryColor,
+                              size: 30,
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          // القسم الأوسط: النصوص
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  fullName.isEmpty
+                                      ? 'Unknown Provider'
+                                      : fullName,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                    color: Color(0xFF1E293B),
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  email,
+                                  style: TextStyle(
+                                    color: Colors.grey.shade500,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          // القسم الأيمن: أيقونة الدردشة
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: primaryColor.withOpacity(0.08),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.chat_bubble_rounded,
+                              color: primaryColor,
+                              size: 20,
+                            ),
+                          ),
+                        ],
                       ),
-                    );
-                  },
+                    ),
+                  ),
                 ),
               );
             },
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.supervised_user_circle_outlined,
+            size: 80,
+            color: Colors.grey.shade300,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'No service providers found.',
+            style: TextStyle(color: Colors.grey.shade500, fontSize: 16),
+          ),
+        ],
       ),
     );
   }
@@ -2107,7 +2423,6 @@ class ClientChatScreen extends StatefulWidget {
 
   const ClientChatScreen({
     super.key,
-
     required this.clientId,
     required this.providerId,
     required this.providerName,
@@ -2124,8 +2439,6 @@ class _ClientChatScreenState extends State<ClientChatScreen> {
   @override
   void initState() {
     super.initState();
-
-    // ✅ نفس منطق السيرفس بروفايدر
     chatId = widget.clientId.compareTo(widget.providerId) < 0
         ? "${widget.clientId}_${widget.providerId}"
         : "${widget.providerId}_${widget.clientId}";
@@ -2145,153 +2458,203 @@ class _ClientChatScreenState extends State<ClientChatScreen> {
 
     final chatRef = FirebaseFirestore.instance.collection('chats').doc(chatId);
 
-    // ✅ إنشاء أو تحديث الدردشة الأساسية
     await chatRef.set({
       'participants': [widget.clientId, widget.providerId],
       'lastMessage': text,
       'lastMessageTime': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
 
-    // ✅ إضافة الرسالة للمحادثة
     await chatRef.collection('messages').add(msgData);
-
     _messageController.clear();
   }
 
   @override
   Widget build(BuildContext context) {
     const Color primaryColor = Color(0xFF00457C);
+    const Color chatBgColor = Color(0xFFF5F7FB);
 
     return Scaffold(
+      backgroundColor: chatBgColor,
       appBar: AppBar(
-        title: Text(widget.providerName),
+        elevation: 1,
+        title: Text(
+          widget.providerName,
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
         backgroundColor: primaryColor,
+        centerTitle: false, // ليبقى الاسم بجانب أيقونة الرجوع بشكل عصري
+        leading: IconButton(
+          icon: const Icon(
+            Icons.arrow_back_ios_new,
+            color: Colors.white,
+            size: 20,
+          ),
+          onPressed: () => Navigator.pop(context),
+        ),
       ),
       body: Column(
         children: [
-          // ✅ عرض الرسائل
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
               stream: FirebaseFirestore.instance
                   .collection('chats')
                   .doc(chatId)
                   .collection('messages')
-                  .orderBy('timestamp', descending: false)
+                  .orderBy('timestamp', descending: true)
                   .snapshots(),
               builder: (context, snapshot) {
-                if (snapshot.hasError) {
-                  return Center(
-                    child: Text(
-                      'Error: ${snapshot.error}',
-                      style: const TextStyle(color: Colors.red),
-                    ),
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(
+                    child: CircularProgressIndicator(color: primaryColor),
                   );
                 }
 
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-
-                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                  return const Center(child: Text('No messages yet.'));
-                }
-
-                final messages = snapshot.data!.docs;
-
-                // ✅ نحدّث حالة القراءة
-                for (var doc in messages) {
-                  final data = doc.data() as Map<String, dynamic>;
-                  if (data['receiverId'] == widget.clientId &&
-                      data['isRead'] == false) {
-                    doc.reference.update({'isRead': true});
-                  }
-                }
+                final messages = snapshot.data?.docs ?? [];
 
                 return ListView.builder(
-                  padding: const EdgeInsets.all(12),
+                  reverse: true,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 15,
+                    vertical: 20,
+                  ),
                   itemCount: messages.length,
                   itemBuilder: (context, index) {
                     final msg = messages[index].data() as Map<String, dynamic>;
                     final isClient = msg['senderId'] == widget.clientId;
 
+                    if (msg['receiverId'] == widget.clientId &&
+                        msg['isRead'] == false) {
+                      messages[index].reference.update({'isRead': true});
+                    }
+
                     final time = msg['timestamp'] != null
                         ? (msg['timestamp'] as Timestamp)
                         .toDate()
-                        .toLocal()
                         .toString()
                         .substring(11, 16)
                         : '';
 
-                    return Align(
-                      alignment: isClient
-                          ? Alignment.centerRight
-                          : Alignment.centerLeft,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          vertical: 8,
-                          horizontal: 12,
-                        ),
-                        margin: const EdgeInsets.symmetric(vertical: 4),
-                        decoration: BoxDecoration(
-                          color: isClient
-                              ? primaryColor.withOpacity(0.8)
-                              : Colors.grey[300],
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              msg['message'] ?? '',
-                              style: TextStyle(
-                                color: isClient ? Colors.white : Colors.black,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              time,
-                              style: TextStyle(
-                                color: isClient
-                                    ? Colors.white70
-                                    : Colors.black54,
-                                fontSize: 10,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                    return _buildChatBubble(
+                      isClient,
+                      msg['message'] ?? '',
+                      time,
+                      primaryColor,
                     );
                   },
                 );
               },
             ),
           ),
+          _buildMessageInput(primaryColor),
+        ],
+      ),
+    );
+  }
 
-          // ✅ مربع الإرسال
-          Padding(
-            padding: const EdgeInsets.all(12),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _messageController,
-                    decoration: const InputDecoration(
-                      hintText: "Type a message...",
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                FloatingActionButton(
-                  mini: true,
-                  backgroundColor: primaryColor,
-                  child: const Icon(Icons.send, color: Colors.white),
-                  onPressed: _sendMessage,
+  Widget _buildChatBubble(bool isMe, String message, String time, Color color) {
+    return Align(
+      alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
+      child: Column(
+        crossAxisAlignment: isMe
+            ? CrossAxisAlignment.end
+            : CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+            margin: EdgeInsets.only(
+              top: 5,
+              bottom: 2,
+              left: isMe ? 50 : 0,
+              right: isMe ? 0 : 50,
+            ),
+            decoration: BoxDecoration(
+              color: isMe ? color : Colors.white,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 5,
+                  offset: const Offset(0, 2),
                 ),
               ],
+              borderRadius: BorderRadius.only(
+                topLeft: const Radius.circular(16),
+                topRight: const Radius.circular(16),
+                bottomLeft: Radius.circular(isMe ? 16 : 0),
+                bottomRight: Radius.circular(isMe ? 0 : 16),
+              ),
+            ),
+            child: Text(
+              message,
+              style: TextStyle(
+                color: isMe ? Colors.white : Colors.black87,
+                fontSize: 15,
+                height: 1.3,
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+            child: Text(
+              time,
+              style: const TextStyle(fontSize: 10, color: Colors.grey),
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildMessageInput(Color primaryColor) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            offset: const Offset(0, -2),
+            blurRadius: 10,
+          ),
+        ],
+      ),
+      child: SafeArea(
+        child: Row(
+          children: [
+            Expanded(
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 15),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF0F2F5),
+                  borderRadius: BorderRadius.circular(25),
+                ),
+                child: TextField(
+                  controller: _messageController,
+                  decoration: const InputDecoration(
+                    hintText: "Type a message...",
+                    border: InputBorder.none,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            GestureDetector(
+              onTap: _sendMessage,
+              child: CircleAvatar(
+                backgroundColor: primaryColor,
+                radius: 22,
+                child: const Icon(
+                  Icons.send_rounded,
+                  color: Colors.white,
+                  size: 20,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -3022,13 +3385,13 @@ class ClientNotificationsScreen extends StatelessWidget {
     final normalized = _normalizeStatus(status);
     switch (normalized) {
       case 'Accepted':
-        return Colors.green;
+        return const Color(0xFF4CAF50);
       case 'Completed':
-        return Colors.blue;
+        return const Color(0xFF2196F3);
       case 'Rejected':
-        return Colors.red;
+        return const Color(0xFFF44336);
       case 'Pending':
-        return Colors.orange;
+        return const Color(0xFFFF9800);
       default:
         return Colors.grey;
     }
@@ -3037,15 +3400,17 @@ class ClientNotificationsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
+    const Color primaryColor = Color(0xFF00457C);
+    const Color backgroundColor = Color(0xFFF8FAFC);
 
     if (user == null) {
       return Scaffold(
         appBar: AppBar(
           title: const Text(
             "Notifications",
-            style: TextStyle(color: Colors.white),
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
           ),
-          backgroundColor: Color(0xFF00457C),
+          backgroundColor: primaryColor,
           centerTitle: true,
         ),
         body: const Center(
@@ -3055,13 +3420,21 @@ class ClientNotificationsScreen extends StatelessWidget {
     }
 
     return Scaffold(
+      backgroundColor: backgroundColor,
       appBar: AppBar(
+        elevation: 0,
+        centerTitle: true,
+        backgroundColor: Colors.transparent,
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            color: primaryColor,
+            borderRadius: BorderRadius.vertical(bottom: Radius.circular(20)),
+          ),
+        ),
         title: const Text(
           "Notifications",
-          style: TextStyle(color: Colors.white),
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
-        backgroundColor: const Color(0xFF00457C),
-        centerTitle: true,
       ),
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
@@ -3070,87 +3443,170 @@ class ClientNotificationsScreen extends StatelessWidget {
             .snapshots(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          if (snapshot.hasError) {
-            return Center(
-              child: Text(
-                'Error: ${snapshot.error}',
-                style: const TextStyle(color: Colors.red),
-              ),
-            );
-          }
-
-          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
             return const Center(
-              child: Text(
-                "No notifications yet",
-                style: TextStyle(fontSize: 16, color: Colors.grey),
-              ),
+              child: CircularProgressIndicator(color: primaryColor),
             );
           }
 
-          // فلترة: ما نعرض الـ Pending، بس اللي اتغيّر عليهم إشي
+          if (snapshot.hasError ||
+              !snapshot.hasData ||
+              snapshot.data!.docs.isEmpty) {
+            return _buildEmptyState();
+          }
+
           final docs = snapshot.data!.docs.where((d) {
             final data = d.data() as Map<String, dynamic>;
             final status = (data['status'] ?? 'Pending').toString();
             return _normalizeStatus(status) != 'Pending';
           }).toList();
 
-          if (docs.isEmpty) {
-            return const Center(
-              child: Text(
-                "No notifications yet",
-                style: TextStyle(fontSize: 16, color: Colors.grey),
-              ),
-            );
-          }
+          if (docs.isEmpty) return _buildEmptyState();
 
           return ListView.builder(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
             itemCount: docs.length,
             itemBuilder: (context, index) {
-              final doc = docs[index];
-              final data = doc.data() as Map<String, dynamic>;
-
+              final data = docs[index].data() as Map<String, dynamic>;
               final service =
               (data['serviceName'] ?? data['service'] ?? 'Service')
                   .toString();
-              final rawStatus = (data['status'] ?? 'Pending').toString();
-              final status = _normalizeStatus(rawStatus);
+              final status = _normalizeStatus(
+                (data['status'] ?? 'Pending').toString(),
+              );
 
               DateTime date = DateTime.now();
               final createdAt = data['updatedAt'] ?? data['createdAt'];
-              if (createdAt is Timestamp) {
-                date = createdAt.toDate();
-              }
+              if (createdAt is Timestamp) date = createdAt.toDate();
 
-              String message;
-              if (status == 'Accepted') {
-                message = "Your request for $service was accepted.";
-              } else if (status == 'Rejected') {
-                message = "Your request for $service was rejected.";
-              } else if (status == 'Completed') {
-                message = "$service has been completed.";
-              } else {
-                message = "Status of $service: $status";
-              }
-
-              return Card(
-                margin: const EdgeInsets.only(bottom: 12),
-                child: ListTile(
-                  leading: Icon(
-                    Icons.notifications,
-                    color: _statusColor(status),
+              return Container(
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.04),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: IntrinsicHeight(
+                  child: Row(
+                    children: [
+                      // الشريط الجانبي الملون للحالة
+                      Container(
+                        width: 6,
+                        decoration: BoxDecoration(
+                          color: _statusColor(status),
+                          borderRadius: const BorderRadius.only(
+                            topLeft: Radius.circular(16),
+                            bottomLeft: Radius.circular(16),
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Icon(
+                                    Icons.notifications_active_outlined,
+                                    color: _statusColor(status),
+                                    size: 20,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      _getFormattedMessage(status, service),
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 14,
+                                        color: Color(0xFF1E293B),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 12),
+                              Row(
+                                mainAxisAlignment:
+                                MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    "${date.day}/${date.month}/${date.year}",
+                                    style: TextStyle(
+                                      color: Colors.grey.shade500,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 10,
+                                      vertical: 4,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: _statusColor(
+                                        status,
+                                      ).withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                    child: Text(
+                                      status,
+                                      style: TextStyle(
+                                        color: _statusColor(status),
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 10,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                  title: Text(message),
-                  subtitle: Text("${date.day}/${date.month}/${date.year}"),
                 ),
               );
             },
           );
         },
+      ),
+    );
+  }
+
+  String _getFormattedMessage(String status, String service) {
+    if (status == 'Accepted') return "Request for $service was accepted.";
+    if (status == 'Rejected') return "Request for $service was rejected.";
+    if (status == 'Completed') return "$service has been completed.";
+    return "Status of $service: $status";
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.notifications_off_outlined,
+            size: 70,
+            color: Colors.grey.shade300,
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            "No notifications yet",
+            style: TextStyle(
+              fontSize: 16,
+              color: Colors.grey,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
       ),
     );
   }

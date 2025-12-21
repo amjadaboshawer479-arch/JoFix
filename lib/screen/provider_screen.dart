@@ -1015,10 +1015,13 @@ class _ServiceProviderHomeState extends State<ServiceProviderHome1> {
                     leading: const Icon(Icons.miscellaneous_services),
                     title: const Text("Manage Services"),
                     onTap: () {
+                      final providerId = FirebaseAuth.instance.currentUser!.uid;
+
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => const ManageServicesPage(),
+                          builder: (context) =>
+                              ManageServicesPage(providerId: providerId),
                         ),
                       );
                     },
@@ -1126,58 +1129,77 @@ class _ServiceProviderHomeState extends State<ServiceProviderHome1> {
 
 //------------manage service -------//
 class Service {
+  final String id;
   String name;
   String description;
   double price;
   String duration;
   bool isAvailable;
+
   Service({
+    required this.id,
     required this.name,
     required this.description,
     required this.price,
     required this.duration,
     required this.isAvailable,
   });
+
+  factory Service.fromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
+    final data = doc.data() ?? {};
+    return Service(
+      id: doc.id,
+      name: data['name'] ?? '',
+      description: data['description'] ?? '',
+      price: (data['price'] is num) ? (data['price'] as num).toDouble() : 0.0,
+      duration: data['duration'] ?? '',
+      isAvailable: data['isAvailable'] ?? true,
+    );
+  }
 }
 
 class ManageServicesPage extends StatefulWidget {
-  const ManageServicesPage({Key? key}) : super(key: key);
+  final String providerId; // ✅ مهم
+
+  const ManageServicesPage({Key? key, required this.providerId})
+      : super(key: key);
+
   @override
   State<ManageServicesPage> createState() => _ManageServicesPageState();
 }
 
 class _ManageServicesPageState extends State<ManageServicesPage> {
   final Color brown = const Color(0xFF00457C);
-  // قائمة الخدمات
-  List<Service> services = [
-    Service(
-      name: "Cleaning",
-      description: "Deep home cleaning with eco-friendly materials.",
-      price: 50.0,
-      duration: "2 hours",
-      isAvailable: true,
-    ),
-  ];
-  // ============== إضافة خدمة جديدة ==============
+
+  late final CollectionReference<Map<String, dynamic>> servicesRef;
+
+  @override
+  void initState() {
+    super.initState();
+    servicesRef = FirebaseFirestore.instance
+        .collection('service_providers')
+        .doc(widget.providerId)
+        .collection('services');
+  }
+
+  // ============== إضافة خدمة ==============
   void _addService() {
     _showServiceDialog();
   }
 
-  // ============== تعديل خدمة موجودة ==============
-  void _editService(int index) {
-    _showServiceDialog(editIndex: index);
+  // ============== تعديل خدمة ==============
+  void _editService(Service service) {
+    _showServiceDialog(service: service);
   }
 
   // ============== حذف خدمة ==============
-  void _deleteService(int index) {
+  void _deleteService(Service service) {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text("Delete Service"),
-        content: Text(
-          "Are you sure you want to delete '${services[index].name}'?",
-        ),
+        content: Text("Are you sure you want to delete '${service.name}'?"),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -1185,9 +1207,9 @@ class _ManageServicesPageState extends State<ManageServicesPage> {
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            onPressed: () {
-              setState(() => services.removeAt(index));
-              Navigator.pop(context);
+            onPressed: () async {
+              await servicesRef.doc(service.id).delete();
+              if (mounted) Navigator.pop(context);
             },
             child: const Text("Delete"),
           ),
@@ -1196,25 +1218,23 @@ class _ManageServicesPageState extends State<ManageServicesPage> {
     );
   }
 
-  // ======= Dialog الإضافة/التعديل =======
-  void _showServiceDialog({int? editIndex}) {
-    final bool isEdit = editIndex != null;
-    final service = isEdit
-        ? services[editIndex]
-        : Service(
-      name: "",
-      description: "",
-      price: 0.0,
-      duration: "",
-      isAvailable: true,
+  // ============== Dialog إضافة / تعديل ==============
+  void _showServiceDialog({Service? service}) {
+    final bool isEdit = service != null;
+
+    final nameCtrl = TextEditingController(text: isEdit ? service!.name : "");
+    final descCtrl = TextEditingController(
+      text: isEdit ? service!.description : "",
     );
-    final nameCtrl = TextEditingController(text: service.name);
-    final descCtrl = TextEditingController(text: service.description);
     final priceCtrl = TextEditingController(
-      text: isEdit ? service.price.toString() : "",
+      text: isEdit ? service!.price.toString() : "",
     );
-    final durationCtrl = TextEditingController(text: service.duration);
-    bool availability = service.isAvailable;
+    final durationCtrl = TextEditingController(
+      text: isEdit ? service!.duration : "",
+    );
+
+    bool availability = isEdit ? service!.isAvailable : true;
+
     showDialog(
       context: context,
       builder: (_) => StatefulBuilder(
@@ -1259,27 +1279,32 @@ class _ManageServicesPageState extends State<ManageServicesPage> {
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(backgroundColor: brown),
-              onPressed: () {
+              onPressed: () async {
                 if (nameCtrl.text.trim().isEmpty ||
                     descCtrl.text.trim().isEmpty ||
                     priceCtrl.text.trim().isEmpty) {
                   return;
                 }
-                final newService = Service(
-                  name: nameCtrl.text.trim(),
-                  description: descCtrl.text.trim(),
-                  price: double.tryParse(priceCtrl.text.trim()) ?? 0.0,
-                  duration: durationCtrl.text.trim(),
-                  isAvailable: availability,
-                );
-                setState(() {
-                  if (isEdit) {
-                    services[editIndex] = newService;
-                  } else {
-                    services.add(newService);
-                  }
-                });
-                Navigator.pop(context);
+
+                final data = {
+                  'name': nameCtrl.text.trim(),
+                  'description': descCtrl.text.trim(),
+                  'price': double.tryParse(priceCtrl.text.trim()) ?? 0.0,
+                  'duration': durationCtrl.text.trim(),
+                  'isAvailable': availability,
+                  'updatedAt': FieldValue.serverTimestamp(),
+                };
+
+                if (isEdit) {
+                  await servicesRef.doc(service!.id).update(data);
+                } else {
+                  await servicesRef.add({
+                    ...data,
+                    'createdAt': FieldValue.serverTimestamp(),
+                  });
+                }
+
+                if (mounted) Navigator.pop(context);
               },
               child: Text(isEdit ? "Save" : "Add"),
             ),
@@ -1289,7 +1314,7 @@ class _ManageServicesPageState extends State<ManageServicesPage> {
     );
   }
 
-  // حقل إدخال مع ستايل
+  // ============== Input Field ==============
   Widget _buildInput(
       String label,
       TextEditingController controller, {
@@ -1313,6 +1338,7 @@ class _ManageServicesPageState extends State<ManageServicesPage> {
     );
   }
 
+  // ============== UI ==============
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -1327,57 +1353,76 @@ class _ManageServicesPageState extends State<ManageServicesPage> {
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: services.isEmpty
-            ? const Center(
-          child: Text(
-            "No services added yet.",
-            style: TextStyle(fontSize: 18, color: Colors.grey),
-          ),
-        )
-            : ListView.builder(
-          itemCount: services.length,
-          itemBuilder: (context, i) {
-            final s = services[i];
-            return Card(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              margin: const EdgeInsets.symmetric(vertical: 8),
-              elevation: 3,
-              child: ListTile(
-                leading: Icon(
-                  Icons.build,
-                  color: s.isAvailable ? brown : Colors.grey,
+        child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+          stream: servicesRef.orderBy('createdAt').snapshots(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
+
+            if (snapshot.hasError) {
+              return Center(child: Text("Error: ${snapshot.error}"));
+            }
+
+            final services = snapshot.data!.docs
+                .map((doc) => Service.fromDoc(doc))
+                .toList();
+
+            if (services.isEmpty) {
+              return const Center(
+                child: Text(
+                  "No services added yet.",
+                  style: TextStyle(fontSize: 18, color: Colors.grey),
                 ),
-                title: Text(
-                  s.name,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
+              );
+            }
+
+            return ListView.builder(
+              itemCount: services.length,
+              itemBuilder: (context, i) {
+                final s = services[i];
+                return Card(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
                   ),
-                ),
-                subtitle: Text(
-                  "${s.description}\nPrice: ${s.price} JD | Duration: ${s.duration}\nStatus: ${s.isAvailable ? "Available" : "Not Available"}",
-                  style: const TextStyle(height: 1.4),
-                ),
-                isThreeLine: true,
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    IconButton(
-                      icon: const Icon(
-                        Icons.edit,
-                        color: Colors.blueAccent,
+                  margin: const EdgeInsets.symmetric(vertical: 8),
+                  elevation: 3,
+                  child: ListTile(
+                    leading: Icon(
+                      Icons.build,
+                      color: s.isAvailable ? brown : Colors.grey,
+                    ),
+                    title: Text(
+                      s.name,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
                       ),
-                      onPressed: () => _editService(i),
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.delete, color: Colors.red),
-                      onPressed: () => _deleteService(i),
+                    subtitle: Text(
+                      "${s.description}\nPrice: ${s.price} JD | Duration: ${s.duration}\nStatus: ${s.isAvailable ? "Available" : "Not Available"}",
+                      style: const TextStyle(height: 1.4),
                     ),
-                  ],
-                ),
-              ),
+                    isThreeLine: true,
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          icon: const Icon(
+                            Icons.edit,
+                            color: Colors.blueAccent,
+                          ),
+                          onPressed: () => _editService(s),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.delete, color: Colors.red),
+                          onPressed: () => _deleteService(s),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
             );
           },
         ),
@@ -2080,6 +2125,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
               final doc = docs[index];
               final data = doc.data() as Map<String, dynamic>;
 
+              // نفس الحقول اللي كنت تستخدمها، بس جايين من Firestore
               final int orderId = index + 1; // بدال order['id']
               final String service =
               (data['serviceName'] ?? data['service'] ?? 'Service')
@@ -2105,7 +2151,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-
+                      // 👇 نفس النص القديم
                       Text(
                         "Order #$orderId",
                         style: TextStyle(
@@ -2147,7 +2193,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                               backgroundColor: brown,
                               foregroundColor: Colors.white,
                             ),
-
+                            // 👇 بدل index، صار على doc.id مباشرة
                             onPressed: () => updateOrder(doc.id, "Accepted"),
                             child: const Text("Accept"),
                           ),
@@ -2232,7 +2278,7 @@ class _ServiceProviderProfileScreenState
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            // profile pic
+            // صورة الملف الشخصي
             Center(
               child: CircleAvatar(
                 radius: 50,
@@ -2509,7 +2555,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
     return lengthOK && numberOK && upperOK && lowerOK && specialOK;
   }
 
-
+  // ✅ دالة للتحقق من التطابق
   bool get isConfirmMatching =>
       confirmController.text.isNotEmpty &&
           newController.text.isNotEmpty &&
@@ -2560,7 +2606,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                 ),
               ),
               onChanged: (_) =>
-                  setState(() {}),
+                  setState(() {}), // إعادة بناء الواجهة للتحديث الفوري
             ),
             const SizedBox(height: 12),
             TextField(
@@ -2578,9 +2624,9 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                 ),
               ),
               onChanged: (_) =>
-                  setState(() {}),
+                  setState(() {}), // ✅ تحديث الرسالة أثناء الكتابة
             ),
-            //  confirm password
+            // ✅ الرسالة تحت confirm password
             const SizedBox(height: 6),
             if (confirmController.text.isNotEmpty)
               Text(
