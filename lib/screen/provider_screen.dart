@@ -2,6 +2,7 @@ import 'package:amjad/screen/login_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'dart:async';
 
 //----------a login service provider----------//
 class ServiseProviderLogin extends StatefulWidget {
@@ -898,6 +899,7 @@ class ServiceProviderHome1 extends StatefulWidget {
   final String lastName;
   final String email;
   final String phone;
+
   const ServiceProviderHome1({
     Key? key,
     this.firstName = " ",
@@ -905,26 +907,68 @@ class ServiceProviderHome1 extends StatefulWidget {
     this.email = '',
     this.phone = '',
   }) : super(key: key);
+
   @override
   State<ServiceProviderHome1> createState() => _ServiceProviderHomeState();
 }
 
 class _ServiceProviderHomeState extends State<ServiceProviderHome1> {
   int _selectedIndex = 0;
+
   bool isLoading = true;
-  List<String> myServices = [];
+  List<Map<String, dynamic>> myServices = [];
+
+  StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _servicesSub;
+
   @override
   void initState() {
     super.initState();
-    _loadServices();
+    _listenToServicesRealtime();
   }
 
-  Future<void> _loadServices() async {
-    await Future.delayed(const Duration(seconds: 1));
-    setState(() {
-      myServices = ["Cleaning", "Painting"]; // مثال
-      isLoading = false;
-    });
+  void _listenToServicesRealtime() {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+
+    if (uid == null) {
+      setState(() {
+        myServices = [];
+        isLoading = false;
+      });
+      return;
+    }
+
+    _servicesSub = FirebaseFirestore.instance
+        .collection('service_providers')
+        .doc(uid)
+        .collection('services')
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .listen(
+          (snapshot) {
+        final services = snapshot.docs.map((doc) {
+          return doc.data();
+        }).toList();
+
+        if (!mounted) return;
+        setState(() {
+          myServices = services;
+          isLoading = false;
+        });
+      },
+      onError: (_) {
+        if (!mounted) return;
+        setState(() {
+          myServices = [];
+          isLoading = false;
+        });
+      },
+    );
+  }
+
+  @override
+  void dispose() {
+    _servicesSub?.cancel();
+    super.dispose();
   }
 
   void _onBottomTap(int index) {
@@ -940,8 +984,8 @@ class _ServiceProviderHomeState extends State<ServiceProviderHome1> {
           builder: (context) => ServiceProviderProfileScreen(
             firstName: widget.firstName,
             lastName: widget.lastName,
-            email: "user@example.com", // إذا عندك البريد، استبدله هنا
-            phone: "+9627XXXXXXX", // إذا عندك رقم الهاتف، استبدله هنا
+            email: "user@example.com",
+            phone: "+9627XXXXXXX",
           ),
         ),
       );
@@ -955,6 +999,7 @@ class _ServiceProviderHomeState extends State<ServiceProviderHome1> {
     if (isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
+
     if (myServices.isEmpty) {
       return const Center(
         child: Text(
@@ -963,24 +1008,51 @@ class _ServiceProviderHomeState extends State<ServiceProviderHome1> {
         ),
       );
     }
+
     return ListView.builder(
       padding: const EdgeInsets.all(16),
       itemCount: myServices.length,
-      itemBuilder: (context, index) => Card(
-        child: ListTile(
-          leading: const Icon(Icons.build),
-          title: Text(myServices[index]),
-        ),
-      ),
+      itemBuilder: (context, index) {
+        final service = myServices[index];
+
+        final String name = service['name'] ?? 'Service';
+        final String description = service['description'] ?? '';
+        final String duration = service['duration'] ?? '';
+        final num? price = service['price'];
+        final bool isAvailable = service['isAvailable'] ?? false;
+
+        return Card(
+          child: ListTile(
+            leading: const Icon(Icons.build),
+            title: Text(name),
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (description.isNotEmpty) Text("Description: $description"),
+                if (duration.isNotEmpty) Text("Duration: $duration"),
+                if (price != null) Text("Price: $price JD"),
+                Text(
+                  isAvailable ? "Available" : "Not Available",
+                  style: TextStyle(
+                    color: isAvailable ? Colors.green : Colors.red,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
   @override
   Widget build(BuildContext context) {
     final Color activeColor = const Color(0xFF00457C);
+
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Color(0xFF00457C),
+        backgroundColor: const Color(0xFF00457C),
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.white),
         title: const Text(
@@ -1016,7 +1088,6 @@ class _ServiceProviderHomeState extends State<ServiceProviderHome1> {
                     title: const Text("Manage Services"),
                     onTap: () {
                       final providerId = FirebaseAuth.instance.currentUser!.uid;
-
                       Navigator.push(
                         context,
                         MaterialPageRoute(
@@ -1040,7 +1111,7 @@ class _ServiceProviderHomeState extends State<ServiceProviderHome1> {
                   ),
                   ListTile(
                     leading: const Icon(Icons.message),
-                    title: const Text("inpox"),
+                    title: const Text("Inbox"),
                     onTap: () {
                       Navigator.push(
                         context,
@@ -1053,7 +1124,6 @@ class _ServiceProviderHomeState extends State<ServiceProviderHome1> {
                 ],
               ),
             ),
-            // زر Logout ثابت في الأسفل
             Align(
               alignment: Alignment.bottomCenter,
               child: ListTile(
@@ -1082,7 +1152,6 @@ class _ServiceProviderHomeState extends State<ServiceProviderHome1> {
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ======= رسالة الترحيب تحت الـAppBar =======
           Container(
             width: double.infinity,
             color: Colors.grey[100],
@@ -1096,7 +1165,6 @@ class _ServiceProviderHomeState extends State<ServiceProviderHome1> {
               ),
             ),
           ),
-          // ======= محتوى التابات =======
           Expanded(
             child: IndexedStack(
               index: _selectedIndex,
@@ -2228,6 +2296,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
 }
 
 //--------- srevice provider profile------//
+// ====================== Profile Screen ======================
 class ServiceProviderProfileScreen extends StatefulWidget {
   final String firstName;
   final String lastName;
@@ -2240,6 +2309,7 @@ class ServiceProviderProfileScreen extends StatefulWidget {
     required this.email,
     required this.phone,
   }) : super(key: key);
+
   @override
   State<ServiceProviderProfileScreen> createState() =>
       _ServiceProviderProfileScreenState();
@@ -2251,6 +2321,10 @@ class _ServiceProviderProfileScreenState
   late String lastName;
   late String email;
   late String phone;
+
+  bool _loading = true; // ✅ للتحميل
+  String? _error; // ✅ بدون ما نخرب UI
+
   @override
   void initState() {
     super.initState();
@@ -2258,11 +2332,58 @@ class _ServiceProviderProfileScreenState
     lastName = widget.lastName;
     email = widget.email;
     phone = widget.phone;
+
+    _loadFromFirestore(); // ✅ جلب من فايربيس
+  }
+
+  Future<void> _loadFromFirestore() async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        setState(() {
+          _loading = false;
+          _error = "No user logged in";
+        });
+        return;
+      }
+
+      final uid = user.uid;
+
+      final doc = await FirebaseFirestore.instance
+          .collection('service_providers')
+          .doc(uid)
+          .get();
+
+      if (!doc.exists || doc.data() == null) {
+        setState(() {
+          _loading = false;
+          _error = "Profile document not found";
+        });
+        return;
+      }
+
+      final data = doc.data()!;
+
+      setState(() {
+        firstName = (data['firstName'] ?? firstName).toString();
+        lastName = (data['lastName'] ?? lastName).toString();
+        email = (data['email'] ?? (user.email ?? email)).toString();
+        phone = (data['phone'] ?? phone).toString();
+        _loading = false;
+        _error = null;
+      });
+    } catch (e) {
+      setState(() {
+        _loading = false;
+        _error = e.toString();
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     const primaryColor = Color(0xFF00457C);
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -2278,40 +2399,93 @@ class _ServiceProviderProfileScreenState
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            // صورة الملف الشخصي
-            Center(
-              child: CircleAvatar(
-                radius: 50,
-                backgroundColor: primaryColor,
-                child: const Icon(Icons.person, size: 50, color: Colors.white),
+            // ✅ كارد واحدة مع أيقونة فوق + Gradient + نصوص تحت بعض (مثل ما طلبت)
+            Card(
+              elevation: 2,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(14),
+                  gradient: const LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      Color(0xFF4FC3F7), // سماوي
+                      Color(0xFF00457C), // أزرق
+                    ],
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    Center(
+                      child: CircleAvatar(
+                        radius: 50,
+                        backgroundColor: Colors.white.withOpacity(0.20),
+                        child: const Icon(
+                          Icons.person,
+                          size: 50,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    if (_loading)
+                      const Padding(
+                        padding: EdgeInsets.only(bottom: 10),
+                        child: CircularProgressIndicator(color: Colors.white),
+                      ),
+                    Text(
+                      "$firstName $lastName",
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      email.isNotEmpty ? email : "-",
+                      style: const TextStyle(
+                        fontSize: 16,
+                        color: Colors.white70,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      phone.isNotEmpty ? phone : "-",
+                      style: const TextStyle(
+                        fontSize: 16,
+                        color: Colors.white70,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
               ),
             ),
-            const SizedBox(height: 16),
-            // الاسم الكامل
-            Text(
-              "$firstName $lastName",
-              style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF00457C),
+
+            // (اختياري) إذا في خطأ اعرضه تحت الكارد بدون ما نخرب شكل الصفحة
+            if (_error != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 10),
+                child: Text(
+                  _error!,
+                  style: const TextStyle(color: Colors.red, fontSize: 12),
+                  textAlign: TextAlign.center,
+                ),
               ),
-            ),
-            const SizedBox(height: 8),
-            // البريد الإلكتروني
-            Text(
-              email,
-              style: const TextStyle(fontSize: 16, color: Colors.black54),
-            ),
-            const SizedBox(height: 4),
-            // رقم الهاتف
-            Text(
-              phone,
-              style: const TextStyle(fontSize: 16, color: Colors.black54),
-            ),
+
             const SizedBox(height: 24),
             const Divider(thickness: 1),
             const SizedBox(height: 12),
-            // إعدادات الحساب
+
+            // إعدادات الحساب (نفس الفرونت)
             _buildSettingTile(
               Icons.edit,
               "Edit Profile",
@@ -2335,6 +2509,9 @@ class _ServiceProviderProfileScreenState
                     email = result['email'];
                     phone = result['phone'];
                   });
+                } else {
+                  // احتياط: ارجع اقرأ من فايربيس
+                  _loadFromFirestore();
                 }
               },
             ),
@@ -2411,6 +2588,9 @@ class _EditServiceProviderProfileScreenState
   late TextEditingController lastNameController;
   late TextEditingController emailController;
   late TextEditingController phoneController;
+
+  bool _saving = false; // ✅ بدون تغيير UI كبير
+
   @override
   void initState() {
     super.initState();
@@ -2427,6 +2607,44 @@ class _EditServiceProviderProfileScreenState
     emailController.dispose();
     phoneController.dispose();
     super.dispose();
+  }
+
+  Future<void> _saveToFirestore() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    setState(() => _saving = true);
+
+    try {
+      await FirebaseFirestore.instance
+          .collection('service_providers')
+          .doc(user.uid)
+          .set({
+        'firstName': firstNameController.text.trim(),
+        'lastName': lastNameController.text.trim(),
+        'email': emailController.text.trim(),
+        'phone': phoneController.text.trim(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+
+      if (!mounted) return;
+      Navigator.pop(context, {
+        'firstName': firstNameController.text.trim(),
+        'lastName': lastNameController.text.trim(),
+        'email': emailController.text.trim(),
+        'phone': phoneController.text.trim(),
+      });
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Failed to save: $e"),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
   }
 
   @override
@@ -2501,17 +2719,10 @@ class _EditServiceProviderProfileScreenState
                     borderRadius: BorderRadius.circular(8),
                   ),
                 ),
-                onPressed: () {
-                  Navigator.pop(context, {
-                    'firstName': firstNameController.text,
-                    'lastName': lastNameController.text,
-                    'email': emailController.text,
-                    'phone': phoneController.text,
-                  });
-                },
-                child: const Text(
-                  "Save",
-                  style: TextStyle(fontSize: 16, color: Colors.white),
+                onPressed: _saving ? null : _saveToFirestore,
+                child: Text(
+                  _saving ? "Saving..." : "Save",
+                  style: const TextStyle(fontSize: 16, color: Colors.white),
                 ),
               ),
             ),
@@ -2533,10 +2744,14 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
   bool _obscureCurrent = true;
   bool _obscureNew = true;
   bool _obscureConfirm = true;
+
   final TextEditingController currentController = TextEditingController();
   final TextEditingController newController = TextEditingController();
   final TextEditingController confirmController = TextEditingController();
   String? errorMessage;
+
+  bool _saving = false;
+
   @override
   void dispose() {
     currentController.dispose();
@@ -2555,11 +2770,70 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
     return lengthOK && numberOK && upperOK && lowerOK && specialOK;
   }
 
-  // ✅ دالة للتحقق من التطابق
   bool get isConfirmMatching =>
       confirmController.text.isNotEmpty &&
           newController.text.isNotEmpty &&
           confirmController.text == newController.text;
+
+  Future<void> _changePassword() async {
+    setState(() {
+      errorMessage = null;
+      _saving = true;
+    });
+
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        setState(() {
+          errorMessage = "No user logged in";
+          _saving = false;
+        });
+        return;
+      }
+
+      final userEmail = user.email;
+      if (userEmail == null || userEmail.isEmpty) {
+        setState(() {
+          errorMessage = "User email not found";
+          _saving = false;
+        });
+        return;
+      }
+
+      // ✅ تحقق الكارنت باسورد
+      final credential = EmailAuthProvider.credential(
+        email: userEmail,
+        password: currentController.text,
+      );
+      await user.reauthenticateWithCredential(credential);
+
+      // ✅ غيّر الباسورد
+      await user.updatePassword(newController.text);
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Password changed successfully"),
+          backgroundColor: Color(0xFF00457C),
+        ),
+      );
+      Navigator.pop(context);
+    } on FirebaseAuthException catch (e) {
+      String msg = "Something went wrong";
+      if (e.code == 'wrong-password') msg = "Current password is incorrect";
+      if (e.code == 'invalid-credential') msg = "Current password is incorrect";
+      if (e.code == 'weak-password') msg = "New password is too weak";
+      if (e.code == 'requires-recent-login')
+        msg = "Please login again then retry";
+      setState(() => errorMessage = msg);
+    } catch (e) {
+      setState(() => errorMessage = e.toString());
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     const primaryColor = Color(0xFF00457C);
@@ -2605,8 +2879,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                   onPressed: () => setState(() => _obscureNew = !_obscureNew),
                 ),
               ),
-              onChanged: (_) =>
-                  setState(() {}), // إعادة بناء الواجهة للتحديث الفوري
+              onChanged: (_) => setState(() {}),
             ),
             const SizedBox(height: 12),
             TextField(
@@ -2623,10 +2896,8 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                       setState(() => _obscureConfirm = !_obscureConfirm),
                 ),
               ),
-              onChanged: (_) =>
-                  setState(() {}), // ✅ تحديث الرسالة أثناء الكتابة
+              onChanged: (_) => setState(() {}),
             ),
-            // ✅ الرسالة تحت confirm password
             const SizedBox(height: 6),
             if (confirmController.text.isNotEmpty)
               Text(
@@ -2661,33 +2932,31 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                     borderRadius: BorderRadius.circular(8),
                   ),
                 ),
-                onPressed: () {
+                onPressed: _saving
+                    ? null
+                    : () {
                   if (!isConfirmMatching) {
-                    setState(() {
-                      errorMessage = "Confirm password does not match";
-                    });
-                  } else if (!isPasswordValid) {
-                    setState(() {
-                      errorMessage = "New password does not meet requirements";
-                    });
-                  } else {
-                    setState(() {
-                      errorMessage = null;
-                    });
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text(
-                          "Password changed successfully (Front-end only)",
-                        ),
-                        backgroundColor: Color(0xFF00457C),
-                      ),
+                    setState(
+                          () => errorMessage =
+                      "Confirm password does not match",
                     );
-                    Navigator.pop(context);
+                  } else if (!isPasswordValid) {
+                    setState(
+                          () => errorMessage =
+                      "New password does not meet requirements",
+                    );
+                  } else if (currentController.text.isEmpty) {
+                    setState(
+                          () =>
+                      errorMessage = "Please enter current password",
+                    );
+                  } else {
+                    _changePassword();
                   }
                 },
-                child: const Text(
-                  "Save",
-                  style: TextStyle(color: Colors.white, fontSize: 16),
+                child: Text(
+                  _saving ? "Saving..." : "Save",
+                  style: const TextStyle(color: Colors.white, fontSize: 16),
                 ),
               ),
             ),
