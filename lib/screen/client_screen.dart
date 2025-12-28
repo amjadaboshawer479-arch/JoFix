@@ -9,6 +9,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 //-------------------Client Home Page-------------------//
+
 class ClientHomePage extends StatefulWidget {
   const ClientHomePage({super.key});
   @override
@@ -54,7 +55,7 @@ class _ClientHomePageState extends State<ClientHomePage> {
     });
   }
 
-  //  تسجيل الدخول بالبريد وكلمة السر
+  // 🔥 تسجيل الدخول بالبريد وكلمة السر
   Future<void> _loginClient() async {
     final email = emailController.text.trim();
     final password = passwordController.text.trim();
@@ -120,10 +121,16 @@ class _ClientHomePageState extends State<ClientHomePage> {
     }
   }
 
-  //  تسجيل الدخول بجوجل ( شغال)
+  // 🔥 تسجيل الدخول بجوجل (✅ شغال)
   Future<void> _loginWithGoogle() async {
     try {
-      final googleUser = await GoogleSignIn().signIn();
+      final googleSignIn = GoogleSignIn();
+
+      // ✅ يجبره ينسى الحساب السابق ويطلع شاشة اختيار الحساب
+
+      await googleSignIn.signOut();    // احتياط
+
+      final googleUser = await googleSignIn.signIn();
       if (googleUser == null) return;
 
       final googleAuth = await googleUser.authentication;
@@ -133,42 +140,36 @@ class _ClientHomePageState extends State<ClientHomePage> {
         idToken: googleAuth.idToken,
       );
 
-      final userCredential = await FirebaseAuth.instance.signInWithCredential(
-        credential,
-      );
+      final userCredential =
+      await FirebaseAuth.instance.signInWithCredential(credential);
 
       final user = userCredential.user;
       if (user == null) throw Exception("User not found");
 
-      final uid = user.uid;
-      final email = user.email ?? "";
-      final displayName = user.displayName ?? "";
-      final phone = "";
+      final docRef =
+      FirebaseFirestore.instance.collection("clients").doc(user.uid);
 
-      final docRef = FirebaseFirestore.instance.collection("clients").doc(uid);
       final doc = await docRef.get();
-
       if (!doc.exists) {
         await docRef.set({
-          "uid": uid,
-          "email": email,
-          "fullName": displayName,
-          "phone": phone,
+          "uid": user.uid,
+          "email": user.email ?? "",
+          "fullName": user.displayName ?? "",
+          "phone": "",
           "createdAt": FieldValue.serverTimestamp(),
         });
       }
 
+      if (!mounted) return;
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => const ActivityHomeScreen()),
       );
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text("Error: $e")));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text("Error: $e")));
     }
   }
-
   @override
   Widget build(BuildContext context) {
     const Color borderColor = Color(0xFF00457C);
@@ -348,11 +349,11 @@ class _ClientHomePageState extends State<ClientHomePage> {
 
             const SizedBox(height: 24),
 
-
+            // ✅ بدل مربعات Google/Facebook: Icons جنب بعض
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                //  Google (شغال)
+                // ✅ Google (شغال)
                 InkWell(
                   onTap: _loginWithGoogle,
                   borderRadius: BorderRadius.circular(30),
@@ -374,7 +375,7 @@ class _ClientHomePageState extends State<ClientHomePage> {
 
                 const SizedBox(width: 16),
 
-                //  Facebook (منظر فقط بدون backend)
+                // ✅ Facebook (منظر فقط بدون backend)
                 InkWell(
                   onTap: null,
                   borderRadius: BorderRadius.circular(30),
@@ -430,7 +431,7 @@ class _ClientHomePageState extends State<ClientHomePage> {
     );
   }
 
-  //  BEAUTIFUL REUSABLE FIELD -------------------------
+  // 🔥 BEAUTIFUL REUSABLE FIELD -------------------------
   Widget _buildStyledField({
     required TextEditingController controller,
     required String hint,
@@ -469,6 +470,8 @@ class _ClientHomePageState extends State<ClientHomePage> {
     );
   }
 }
+
+
 
 //---------FORGET PASSWORD--------//
 class ForgotPasswordScreen extends StatefulWidget {
@@ -689,7 +692,6 @@ class _SignupScreenState extends State<SignupScreen> {
         ),
       );
 
-
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
@@ -712,14 +714,12 @@ class _SignupScreenState extends State<SignupScreen> {
   }
 
   Future<void> _signupWithGoogle() async {
-
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text("Google Sign Up logic placeholder")),
     );
   }
 
   Future<void> _signupWithFacebook() async {
-
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text("Facebook Sign Up logic placeholder")),
     );
@@ -1317,7 +1317,7 @@ class _ActivityHomeScreenState extends State<ActivityHomeScreen> {
           }
 
           return Container(
-            margin: const EdgeInsets.all(12),
+            margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
             padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
             decoration: BoxDecoration(
               color: Colors.white,
@@ -1364,7 +1364,7 @@ class _ActivityHomeScreenState extends State<ActivityHomeScreen> {
                           Icon(
                             Icons.home_repair_service,
                             color: Colors.white,
-                            size: 28,
+                            size: 26,
                           ),
                           SizedBox(height: 4),
                           Text(
@@ -1553,7 +1553,13 @@ class _ServiceCardState extends State<_ServiceCard> {
                       fit: BoxFit.cover,
                       width: double.infinity,
                       errorBuilder: (context, error, stackTrace) {
-                        return const Center(child: Icon(Icons.broken_image, size: 40, color: Colors.grey));
+                        return const Center(
+                          child: Icon(
+                            Icons.broken_image,
+                            size: 40,
+                            color: Colors.grey,
+                          ),
+                        );
                       },
                     ),
                   ),
@@ -1848,6 +1854,8 @@ class _HouseCleaningPageState extends State<HouseCleaningPage> {
 }
 
 //------- اذا كبس على hose cleaning من جوا ---//
+
+// ====================== HouseCleaningProsPage ======================
 class HouseCleaningProsPage extends StatelessWidget {
   const HouseCleaningProsPage({Key? key}) : super(key: key);
 
@@ -1866,7 +1874,7 @@ class HouseCleaningProsPage extends StatelessWidget {
           onPressed: () => Navigator.pop(context),
         ),
         title: SizedBox(
-          height: 40, // ✅ ثابت وآمن للإيموليتر
+          height: 40,
           child: Row(
             children: [
               const Icon(Icons.search, color: Colors.black54),
@@ -1934,6 +1942,9 @@ class HouseCleaningProsPage extends StatelessWidget {
 
                 final image = "imagee/service pro.jpg";
 
+                final providerId = providers[index].id;
+                final mapLink = (data['mapLink'] ?? '').toString();
+
                 return Card(
                   elevation: 3,
                   margin: const EdgeInsets.only(bottom: 16),
@@ -1948,7 +1959,7 @@ class HouseCleaningProsPage extends StatelessWidget {
                         const SizedBox(width: 12),
                         Expanded(
                           child: Column(
-                            mainAxisSize: MainAxisSize.min, // ✅ مهم
+                            mainAxisSize: MainAxisSize.min,
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
@@ -1962,7 +1973,6 @@ class HouseCleaningProsPage extends StatelessWidget {
                               ),
                               const SizedBox(height: 6),
 
-                              // ✅ Wrap بدل Row (مستحيل يعمل overflow)
                               Wrap(
                                 spacing: 4,
                                 crossAxisAlignment: WrapCrossAlignment.center,
@@ -2000,30 +2010,16 @@ class HouseCleaningProsPage extends StatelessWidget {
                                 ),
                               ),
                               const SizedBox(height: 6),
-                              Align(
-                                alignment: Alignment.centerLeft,
-                                child: TextButton(
-                                  onPressed: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (_) => CleanerDetailsPage(
-                                          name: name,
-                                          image: image,
-                                          locationLink: data['mapLink'] ?? '',
-                                          providerId: providers[index].id,
-                                          serviceName: "House Cleaning",
-                                          price: 70.0,
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                  child: const Text(
-                                    "Read more",
-                                    style: TextStyle(color: Colors.blue),
-                                  ),
-                                ),
+
+                              // ✅ (إضافة فقط) قائمة خدمات داخل الكارد تفتح/تسكر
+                              _ProviderServicesExpandable(
+                                providerId: providerId,
+                                providerName: name,
+                                providerImage: image,
+                                mapLink: mapLink,
                               ),
+
+                              const SizedBox(height: 6),
                             ],
                           ),
                         ),
@@ -2040,15 +2036,140 @@ class HouseCleaningProsPage extends StatelessWidget {
   }
 }
 
-//-------في حال كبس على read more ------//
+// ✅ Widget داخلي: ExpansionTile يجيب خدمات المزود من فايربيس
+class _ProviderServicesExpandable extends StatelessWidget {
+  final String providerId;
+  final String providerName;
+  final String providerImage;
+  final String mapLink;
 
+  const _ProviderServicesExpandable({
+    required this.providerId,
+    required this.providerName,
+    required this.providerImage,
+    required this.mapLink,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ExpansionTile(
+      tilePadding: EdgeInsets.zero,
+      childrenPadding: const EdgeInsets.only(top: 6, bottom: 6),
+      title: const Text(
+        "Services",
+        style: TextStyle(fontWeight: FontWeight.bold),
+      ),
+      children: [
+        StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+          stream: FirebaseFirestore.instance
+              .collection('service_providers')
+              .doc(providerId)
+              .collection('services')
+              .orderBy('createdAt', descending: true)
+              .snapshots(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Padding(
+                padding: EdgeInsets.symmetric(vertical: 10),
+                child: Center(child: CircularProgressIndicator()),
+              );
+            }
+
+            if (snapshot.hasError) {
+              return const Padding(
+                padding: EdgeInsets.symmetric(vertical: 10),
+                child: Text(
+                  "Couldn't load services",
+                  style: TextStyle(color: Colors.red),
+                ),
+              );
+            }
+
+            final docs = snapshot.data?.docs ?? [];
+            if (docs.isEmpty) {
+              return const Padding(
+                padding: EdgeInsets.symmetric(vertical: 10),
+                child: Text(
+                  "No services added yet",
+                  style: TextStyle(color: Colors.grey),
+                ),
+              );
+            }
+
+            return ListView.separated(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: docs.length,
+              separatorBuilder: (_, __) => const Divider(height: 1),
+              itemBuilder: (context, index) {
+                final doc = docs[index];
+                final data = doc.data();
+
+                // ✅ نفس حقولك اللي بعثتهم
+                final String serviceName = (data['name'] ?? 'Service')
+                    .toString();
+                final num? priceRaw = data['price'];
+                final double price = priceRaw is num
+                    ? priceRaw.toDouble()
+                    : 0.0;
+
+                final bool isAvailable = (data['isAvailable'] ?? true) == true;
+
+                // إذا مش متاحة، خفف لونها (بدون تغيير تصميم الصفحة الأساسية)
+                return ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  enabled: isAvailable,
+                  title: Text(
+                    serviceName,
+                    style: TextStyle(
+                      color: isAvailable ? Colors.black : Colors.grey,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  subtitle: Text(
+                    price > 0 ? "JOD $price" : "",
+                    style: TextStyle(
+                      color: isAvailable ? Colors.black54 : Colors.grey,
+                    ),
+                  ),
+                  trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+
+                  // ✅ عند اختيار خدمة: افتح نفس CleanerDetailsPage ومرر الداتا الصح
+                  onTap: isAvailable
+                      ? () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => CleanerDetailsPage(
+                          name: providerName,
+                          image: providerImage,
+                          locationLink: mapLink,
+                          providerId: providerId,
+                          serviceName: serviceName,
+                          price: price > 0 ? price : 70.0,
+                        ),
+                      ),
+                    );
+                  }
+                      : null,
+                );
+              },
+            );
+          },
+        ),
+      ],
+    );
+  }
+}
+
+// ------- في حال كبس على read more ------ //
 class CleanerDetailsPage extends StatelessWidget {
   final String name;
   final String image;
-  final String providerId; // ✅ جديد
-  final String serviceName; // ✅ جديد
-  final double price; // ✅ جديد
-  final String locationLink; // الرابط من Firebase
+  final String providerId;
+  final String serviceName;
+  final double price;
+  final String locationLink;
 
   const CleanerDetailsPage({
     Key? key,
@@ -2060,7 +2181,6 @@ class CleanerDetailsPage extends StatelessWidget {
     required this.locationLink,
   }) : super(key: key);
 
-  // دالة لفتح Google Maps
   void _openMap(String link) async {
     final uri = Uri.parse(link);
     if (await canLaunchUrl(uri)) {
@@ -2084,7 +2204,6 @@ class CleanerDetailsPage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            /// Profile section
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -2109,9 +2228,9 @@ class CleanerDetailsPage extends StatelessWidget {
                       const SizedBox(height: 8),
                       Row(
                         children: [
-                          const Text(
-                            "JOD 70 ",
-                            style: TextStyle(
+                          Text(
+                            "JOD ${price.toStringAsFixed(0)} ",
+                            style: const TextStyle(
                               fontSize: 15,
                               fontWeight: FontWeight.bold,
                               color: Colors.black87,
@@ -2127,7 +2246,6 @@ class CleanerDetailsPage extends StatelessWidget {
                         ],
                       ),
                       const SizedBox(height: 6),
-                      // زر الموقع
                       GestureDetector(
                         onTap: () => _openMap(locationLink),
                         child: Row(
@@ -2144,8 +2262,6 @@ class CleanerDetailsPage extends StatelessWidget {
                           ],
                         ),
                       ),
-
-                      // ✅ زر Book Now (بعد أن نرى كل المعلومات)
                       const SizedBox(height: 26),
                       SizedBox(
                         width: 230,
@@ -2183,7 +2299,6 @@ class CleanerDetailsPage extends StatelessWidget {
 
             const SizedBox(height: 16),
 
-            /// باقي الصفحة كما هي...
             const Text(
               "About This Pro",
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),

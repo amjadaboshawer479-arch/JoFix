@@ -18,7 +18,11 @@ class MyApp extends StatelessWidget {
   const MyApp({super.key});
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(home: const SplashScreen()); // أول شاشة تفتح );
+    return MaterialApp(
+      debugShowCheckedModeBanner: false, // 👈 هذا السطر
+      home: SplashScreen(),
+    );
+    // أول شاشة تفتح );
   }
 }
 
