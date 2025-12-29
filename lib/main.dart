@@ -19,7 +19,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      debugShowCheckedModeBanner: false, // 👈 هذا السطر
+      debugShowCheckedModeBanner: false,
       home: SplashScreen(),
     );
     // أول شاشة تفتح );
